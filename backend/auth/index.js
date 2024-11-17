@@ -9,18 +9,18 @@ module.exports = function (httpRequestsTotal, dbConfig) {
     router.post('/login', async (req, res) => {
         const { username, password } = req.body;
         console.log(`Username and password: ${username} ${password}`);
-    
+
         if (!username || !password) {
             httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '400' });
             return res.status(400).json({ error: 'Username and password are required' });
         }
-    
+
         const hashedPassword = createHash('sha256').update(password).digest('base64');
         console.log(`Hashed password: ${hashedPassword}`);
-    
+
         const db = new pg.Client(dbConfig);
         await db.connect();
-    
+
         try {
             // Verificar si la cuenta está bloqueada
             const lockResult = await db.query(`
@@ -28,11 +28,11 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                 FROM users
                 WHERE username = $1;
             `, [username]);
-    
+
             if (lockResult.rowCount > 0) {
                 const { is_locked, unlock_time } = lockResult.rows[0];
                 const currentTime = new Date();
-    
+
                 // Si la cuenta está bloqueada y el tiempo de desbloqueo aún no ha pasado
                 if (is_locked && unlock_time && currentTime < new Date(unlock_time)) {
                     const timeRemaining = Math.ceil((new Date(unlock_time) - currentTime) / 1000); // en segundos
@@ -42,7 +42,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                         timeRemaining: timeRemaining
                     });
                 }
-    
+
                 // Si el tiempo de desbloqueo ha pasado, restablece el estado de bloqueo
                 if (is_locked && unlock_time && currentTime >= new Date(unlock_time)) {
                     await db.query(`
@@ -52,21 +52,21 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     `, [username]);
                 }
             }
-    
+
             // Verificar intentos de inicio de sesión fallidos
             const attemptResult = await db.query(`
                 SELECT attempts, last_attempt
                 FROM login_attempts
                 WHERE username = $1;
             `, [username]);
-    
+
             if (attemptResult.rowCount > 0) {
                 const { attempts, last_attempt } = attemptResult.rows[0];
                 const lastAttemptTime = new Date(last_attempt);
                 const currentTime = new Date();
                 const timeElapsed = currentTime - lastAttemptTime;
                 const lockoutPeriod = 15 * 60 * 1000; // 15 minutos en milisegundos
-    
+
                 // Si hay tres o más intentos y es reciente, bloquea la cuenta temporalmente
                 if (attempts >= 3 && timeElapsed < lockoutPeriod) {
                     const unlockTime = new Date(currentTime.getTime() + lockoutPeriod);
@@ -75,14 +75,14 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                         SET is_locked = TRUE, unlock_time = $1
                         WHERE username = $2;
                     `, [unlockTime, username]);
-    
+
                     await db.end();
                     return res.status(429).json({
                         error: 'Account temporarily locked due to multiple failed login attempts.',
                         timeRemaining: Math.ceil(lockoutPeriod / 1000)
                     });
                 }
-    
+
                 // Si han pasado más de 15 minutos, restablece los intentos
                 if (timeElapsed >= lockoutPeriod) {
                     await db.query(`
@@ -92,7 +92,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     `, [currentTime, username]);
                 }
             }
-    
+
             // Intentar obtener el usuario desde la base de datos
             const result = await db.query(`
                 SELECT u.id, u.username, u.password, r.role_name
@@ -101,7 +101,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                 JOIN roles r ON ur.role_id = r.id
                 WHERE u.username = $1;
             `, [username]);
-    
+
             if (result.rowCount === 0) {
                 // Registrar intento fallido para nombre de usuario inexistente
                 await db.query(`
@@ -113,13 +113,13 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                 await db.end();
                 return res.status(401).json({ error: 'Invalid username' });
             }
-    
+
             const user = result.rows[0];
-    
+
             // Si la contraseña no coincide, incrementar el contador de intentos fallidos
             if (user.password !== hashedPassword) {
-                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401'});
-                res.status(401).json({error: 'Invalid password'});
+                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
+                res.status(401).json({ error: 'Invalid password' });
                 return;
             }
 
@@ -130,6 +130,15 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                 userId: user.id,
                 role: user.role_name
             };
+            // Guardar la sesión en la base de datos
+            await db.query(
+                `
+                INSERT INTO sessions (session_id, user_id, expires_at)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (session_id) DO NOTHING;
+                `,
+                [session.sid, session.userId, new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)] // Expiración en 30 días
+            );
             console.log(`New session: ${JSON.stringify(session)}`);
             const sessionString = JSON.stringify(session);
             const sessionEncoded = Buffer.from(sessionString, 'ascii').toString('base64');
@@ -141,7 +150,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                 sameSite: 'strict', // cookie is not sent in cross-site requests
                 maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
             });
-    
+
             res.json({ message: 'Login successful' });
         } catch (err) {
             console.error(err);
@@ -213,7 +222,6 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     id;
             `, [username, hashedPassword]);
 
-            console.log(`Database message-----: ${JSON.stringify(result)}`);
             const userId = result.rows[0].id;
 
             if (!userId) {

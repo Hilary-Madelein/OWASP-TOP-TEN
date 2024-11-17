@@ -95,6 +95,7 @@ app.use(async (req, res, next) => {
   }
 
   const encodedSessionData = req.cookies['main_session'];
+  
 
   if (!encodedSessionData) {
     console.log('No session cookie found');
@@ -104,7 +105,9 @@ app.use(async (req, res, next) => {
   try {
     // Decodificar la cookie y extraer sessionId y userId
     const sessionData = JSON.parse(Buffer.from(encodedSessionData, 'base64').toString('ascii'));
-    const { sessionId, userId } = sessionData;
+    const { sid: sessionId, userId } = sessionData;
+
+    console.log('main_session', sessionData);
 
     if (!sessionId || !userId) {
       console.log('Invalid session data');
@@ -118,6 +121,9 @@ app.use(async (req, res, next) => {
     const sessionResult = await db.query(`
       SELECT user_id FROM sessions WHERE session_id = $1 AND expires_at > NOW();
     `, [sessionId]);
+
+    console.log('Session not found or expired', sessionResult);
+    
 
     // Si no se encuentra una sesión válida
     if (sessionResult.rowCount === 0) {
