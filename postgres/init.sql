@@ -71,11 +71,12 @@ CREATE TABLE sessions (
   expires_at TIMESTAMP
 );
 
-CREATE TABLE login_attempts (
-    username VARCHAR(50) PRIMARY KEY,
+CREATE TABLE ip_login_attempts (
+    ip_address VARCHAR(45) PRIMARY KEY,
     attempts INT DEFAULT 0,
-    last_attempt TIMESTAMP
+    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 INSERT INTO roles (role_name) VALUES ('admin');
 INSERT INTO roles (role_name) VALUES ('user');
