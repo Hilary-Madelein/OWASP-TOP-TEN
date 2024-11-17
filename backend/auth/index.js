@@ -3,86 +3,99 @@ const { createHash } = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const pg = require('pg');
 const router = express.Router();
+const expressRateLimit = require('express-rate-limit');
 
 module.exports = function (httpRequestsTotal, dbConfig) {
-    router.post('/login', async (req, res) => {
+    // Configurar el limitador de solicitudes
+    const limiter = expressRateLimit({
+        windowMs: 1000 * 60 * 60 * 24, // 1 día
+        max: 5, // Máximo 5 solicitudes por IP
+        handler: (req, res) => {
+            console.log(`Too many requests from this IP: ${req.ip}`);
+            httpRequestsTotal.inc({ endpoint: 'login', method: req.method, status_code: '429' });
+            res.status(429).json({ error: 'Too many requests from this IP, please try again after 24 hours' });
+        }
+    });
+
+    // Aplicar el limitador solo a la ruta /login
+    router.post('/login', limiter, async (req, res) => {
         const { username, password } = req.body;
         console.log(`Username and password: ${username} ${password}`);
+
         if (!username || !password) {
-            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '400'});
-            res.status(400).json({error: 'Username and password are required'});
-            return;
+            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '400' });
+            return res.status(400).json({ error: 'Username and password are required' });
         }
+
         const hashedPassword = createHash('sha256').update(password).digest('base64');
-        console.log(`Hashed password: ${hashedPassword}`);
+        const db = new pg.Client(dbConfig);
+        await db.connect();
+
         try {
-            const db = new pg.Client(dbConfig);
-            await db.connect();
-            console.log('Connected to database');
             const result = await db.query(`
-            SELECT
-                u.id,
-                u.username,
-                u.password,
-                r.role_name
-            FROM
-                users u
-            JOIN
-                user_roles ur ON u.id = ur.user_id
-            JOIN
-                roles r ON ur.role_id = r.id
-            WHERE
-                u.username = $1;
+                SELECT
+                    u.id,
+                    u.username,
+                    u.password,
+                    r.role_name
+                FROM
+                    users u
+                JOIN
+                    user_roles ur ON u.id = ur.user_id
+                JOIN
+                    roles r ON ur.role_id = r.id
+                WHERE
+                    u.username = $1;
             `, [username]);
-            console.log(`Database message: ${JSON.stringify(result)}`);
+
             if (result.rowCount === 0) {
-                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401'});
-                res.status(401).json({error: 'Invalid username'});
-                return;
+                console.log(`Login failed: Invalid username`);
+                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
+                await db.end();
+                return res.status(401).json({ error: 'Invalid username or password' });
             }
-            const user = result?.rows[0];
-            await db.end();
-            console.log('Disconnected from database');
+
+            const user = result.rows[0];
 
             if (user.password !== hashedPassword) {
-                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401'});
-                res.status(401).json({error: 'Invalid password'});
-                return;
+                console.log(`Login failed: Invalid password`);
+                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
+                await db.end();
+                return res.status(401).json({ error: 'Invalid username or password' });
             }
 
-            // create session cookie and encode it in base64
-            console.log(`Create cookie session`);
+            // Crear y enviar la sesión
             const session = {
                 sid: uuidv4(),
                 userId: user.id,
                 role: user.role_name
             };
-            console.log(`New session: ${JSON.stringify(session)}`);
-            const sessionString = JSON.stringify(session);
-            const sessionEncoded = Buffer.from(sessionString, 'ascii').toString('base64');
-            console.log(`New session cookie: ${sessionEncoded}`);
 
+            const sessionEncoded = Buffer.from(JSON.stringify(session), 'ascii').toString('base64');
             res.cookie('main_session', sessionEncoded, {
-                httpOnly: false, // cookie is not accessible via JavaScript
-                secure: true, // https only
-                sameSite: 'strict', // cookie is not sent in cross-site requests
-                maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
+                httpOnly: true,
+                secure: true,
+                sameSite: 'strict',
+                maxAge: 1000 * 60 * 60 * 24 * 30 // 30 días
             });
-            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '200'});
-            res.json({message: 'Login successful' });
+
+            console.log(`Login successful for username: ${username}`);
+            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '200' });
+            await db.end();
+            res.json({ message: 'Login successful' });
         } catch (err) {
-            console.error(err);
-            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '500'});
-            res.status(500).json({error: 'Internal server error'});
+            console.error('Login error:', err.message);
+            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '500' });
+            await db.end();
+            res.status(500).json({ error: 'Internal server error' });
         }
-    })
+    });
 
     router.get('/logout', async (req, res) => {
-        // clear session cookie
         res.clearCookie('main_session');
-        httpRequestsTotal.inc({ endpoint: 'logout', method: 'GET', status_code: '200'});
-        res.json({message: 'Logout successful'});
-    })
+        httpRequestsTotal.inc({ endpoint: 'logout', method: 'GET', status_code: '200' });
+        res.json({ message: 'Logout successful' });
+    });
 
     router.post('/register', async (req, res) => {
         const { username, password } = req.body;
