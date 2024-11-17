@@ -64,7 +64,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
 
             res.cookie('main_session', sessionEncoded, {
                 httpOnly: false, // cookie is not accessible via JavaScript
-                secure: true, // https only
+                secure: false, // https only
                 sameSite: 'strict', // cookie is not sent in cross-site requests
                 maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
             });

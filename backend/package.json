@@ -9,5 +9,8 @@
     "prom-client": "^15.1.0",
     "semver": "^7.0.0",
     "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@cyclonedx/bom": "^4.1.0"
   }
 }
