@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
 </head>
+
 <body>
     <div>
         <nav>
@@ -24,7 +26,8 @@
         </div>
         <form id="profile" style="max-width: 220px;">
             <div>
-                <img style="width: 120px;height: 120px; border-radius: 50%; object-fit: cover;" id="profile-picture" alt="Profile picture" />
+                <img style="width: 120px;height: 120px; border-radius: 50%; object-fit: cover;" id="profile-picture"
+                    alt="Profile picture" />
             </div>
             <div style="display: flex; flex-direction: column;">
                 <label for="username">Username</label>
@@ -63,7 +66,7 @@
             });
 
             // fetch user data and populate form
-            const fetchUserData =  async () => {
+            const fetchUserData = async () => {
                 console.log('Fetching user data...');
                 console.log(`Cookies: ${document.cookie}`);
                 const session = document.cookie.split(';').find(c => {
@@ -109,19 +112,23 @@
 
             profile.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                errorEl.innerText = '';
-                successEl.innerText = '';
+                errorEl.innerText = ''; // Borra mensajes globales
+                successEl.innerText = ''; // Borra mensajes globales
 
+                // Obtén datos del formulario
                 const session = document.cookie.split(';').find(c => c.includes('main_session'));
                 const sessionData = atob(decodeURIComponent(session.split('=')[1]));
                 const { userId } = JSON.parse(sessionData);
-
-                console.log(`User ID: ${userId}`);
 
                 const formData = new FormData(profile);
                 const formDataObject = Object.fromEntries(formData);
                 console.log(`Form data: ${JSON.stringify(formDataObject)}`);
 
+                // Limpiar errores previos
+                const errorFields = profile.querySelectorAll('.error-field');
+                errorFields.forEach((el) => el.remove());
+
+                // Enviar datos al servidor
                 fetch(`/api/users/${userId}`, {
                     method: 'POST',
                     headers: {
@@ -129,20 +136,37 @@
                     },
                     body: JSON.stringify(formDataObject)
                 })
-                .then(response => {
-                    if (response.ok) {
-                        console.log('Update successful');
-                        successEl.innerText = 'Update successful';
-                    } else {
-                        console.log('Update failed');
-                        errorEl.innerText = 'Update failed';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    errorEl.innerText = 'Error: ' + error;
-                });
+                    .then(async (response) => {
+                        if (response.ok) {
+                            console.log('Update successful');
+                            successEl.innerText = 'Update successful';
+                        } else {
+                            const errorData = await response.json(); // Obtener los errores específicos del backend
+                            console.log('Update failed:', errorData);
+
+                            // Si hay errores mapeados en el servidor, mostrarlos
+                            if (errorData.errors) {
+                                Object.entries(errorData.errors).forEach(([field, message]) => {
+                                    const input = profile.querySelector(`[name="${field}"]`);
+                                    if (input) {
+                                        const errorMsg = document.createElement('p');
+                                        errorMsg.innerText = message;
+                                        errorMsg.style.color = 'red';
+                                        errorMsg.classList.add('error-field');
+                                        input.insertAdjacentElement('afterend', errorMsg);
+                                    }
+                                });
+                            } else {
+                                errorEl.innerText = 'Update failed. Please try again.';
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                        errorEl.innerText = 'An error occurred while updating the profile.';
+                    });
             });
+
         </script>
         <style>
             input {
@@ -151,4 +175,5 @@
         </style>
     </div>
 </body>
+
 </html>
