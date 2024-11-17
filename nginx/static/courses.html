@@ -1,29 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Courses</title>
+    <title>Learning Platform</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f6f9;
+            line-height: 1.6;
+        }
+
+        /* Navbar Styles */
+        nav {
+            background-color: #202447;
+            padding: 15px 20px;
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        nav a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 10px 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        /* Main Content */
+        .container {
+            padding: 100px 20px;
+            text-align: center;
+            background-color: #f4f6f9;
+        }
+
+        .container h1 {
+            font-size: 36px;
+            color: #202447;
+            margin-bottom: 20px;
+        }
+
+        .container p {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        /* Courses Section */
+        .courses-section {
+            padding: 60px 20px;
+            background-color: #fff;
+        }
+
+        .courses-section h2 {
+            font-size: 32px;
+            color: #202447;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .course-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 20px auto;
+            width: 300px;
+            display: inline-block;
+            text-align: left;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .course-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .course-card h3 {
+            font-size: 22px;
+            color: #202447;
+            margin-bottom: 10px;
+        }
+
+        .course-card p {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .course-card a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #202447;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .course-card a:hover {
+            background-color: #353958;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #202447;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        footer p {
+            font-size: 14px;
+        }
+    </style>
 </head>
+
 <body>
+
+    <!-- Navbar -->
     <nav>
-        <a href="/">Home</a>
         <a href="/about">About</a>
         <a id="profile" href="/profile">Profile</a>
         <a id="logout" href="/logout">Logout</a>
+        <a id="login" href="/login">Login</a>
     </nav>
-    <h1>Courses</h1>
-    <p>Here you can view your courses.</p>
-    <div id="courses"></div>
+
+    <!-- Main Content -->
+    <section class="container">
+        <h1>Learning Platform</h1>
+        <p>Welcome to the learning platform. This is a simple platform to learn and practice different programming languages and frameworks.</p>
+        <p>Feel free to explore the platform and learn new things.</p>
+        <p>Happy Learning!</p>
+    </section>
+
+    <!-- Courses Section -->
+    <section class="courses-section">
+        <h2>Courses</h2>
+        <div id="courses"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Learning Platform. All rights reserved.</p>
+    </footer>
+
     <script>
         const coursesEl = document.getElementById('courses');
+        const loginEl = document.getElementById('login');
+        const profileEl = document.getElementById('profile');
+        const logoutEl = document.getElementById('logout');
 
-        // read userId from url query
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('userId');
+        // If user is logged in, show profile link and hide login link
+        if (document.cookie.includes('main_session')) {
+            loginEl.style.display = 'none';
+        } else {
+            profileEl.style.display = 'none';
+            logoutEl.style.display = 'none';
+        }
 
-        // fetch courses and populate list
-        fetch(`/api/users/${userId}/courses`, {
+        // Fetch courses and populate list
+        fetch('/api/courses', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -33,19 +187,16 @@
         .then(data => {
             console.log(`Courses data: ${JSON.stringify(data)}`);
             coursesEl.innerHTML = data.map(course => `
-                <div style="margin-bottom: 24px; border: 1px; border-radius: 8px;">
-                    <p>ID: ${course.id}</p>
-                    <p>Name: ${course.course_name}</p>
-                    <p>Description: ${course.course_description}</p>
-                    <p>Code: ${course.course_code}</p>
+                <div class="course-card">
+                    <h3>${course.course_name}</h3>
+                    <p>${course.course_description}</p>
+                    <a href="/course?courseId=${course.id}">View course</a>
                 </div>
             `).join('');
             console.log('Courses data fetched and populated list');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            coursesEl.innerText = 'Error: ' + error;
         });
     </script>
+
 </body>
+
 </html>
