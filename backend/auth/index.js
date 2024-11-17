@@ -5,6 +5,7 @@ const pg = require('pg');
 const router = express.Router();
 
 module.exports = function (httpRequestsTotal, dbConfig) {
+
     router.post('/login', async (req, res) => {
         const { username, password } = req.body;
         console.log(`Username and password: ${username} ${password}`);
@@ -185,52 +186,61 @@ module.exports = function (httpRequestsTotal, dbConfig) {
         }
     });
 
+
     router.post('/register', async (req, res) => {
         const { username, password } = req.body;
         console.log(`Username and password: ${username} ${password}`);
         if (!username || !password) {
-            httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '400'});
-            res.status(400).json({error: 'Username, password are required'});
+            httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '400' });
+            res.status(400).json({ error: 'Username and password are required' });
             return;
         }
+
         const hashedPassword = createHash('sha256').update(password).digest('base64');
         console.log(`Hashed password: ${hashedPassword}`);
+
         try {
             const db = new pg.Client(dbConfig);
             await db.connect();
             console.log('Connected to database');
+
             const result = await db.query(`
-            INSERT INTO
-                users (username, password)
-            VALUES
-                ($1, $2)
-            RETURNING
-                id;
+                INSERT INTO
+                    users (username, password)
+                VALUES
+                    ($1, $2)
+                RETURNING
+                    id;
             `, [username, hashedPassword]);
-            console.log(`Database message: ${JSON.stringify(result)}`);
-            const userId = result?.rows[0]?.id;
+
+            console.log(`Database message-----: ${JSON.stringify(result)}`);
+            const userId = result.rows[0].id;
+
             if (!userId) {
-                httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '500'});
-                res.status(500).json({error: 'Internal server error'});
+                httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '500' });
+                res.status(500).json({ error: 'Internal server error' });
                 return;
             }
+
             await db.query(`
-            INSERT INTO
-                user_roles (user_id, role_id)
-            VALUES
-                ($1, 2);
+                INSERT INTO
+                    user_roles (user_id, role_id)
+                VALUES
+                    ($1, 2);
             `, [userId]);
-            console.log(`Database message: ${JSON.stringify(result)}`);
+
+            console.log(`Database message66666: ${JSON.stringify(result)}`);
             await db.end();
             console.log('Disconnected from database');
-            httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '200'});
-            res.json({message: 'Registration successful'});
+
+            httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '200' });
+            res.json({ message: 'Registration successful' });
         } catch (err) {
             console.error(err);
-            httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '500'});
-            res.status(500).json({error: 'Internal server error'});
+            httpRequestsTotal.inc({ endpoint: 'register', method: 'POST', status_code: '500' });
+            res.status(500).json({ error: 'Internal server error' });
         }
-    })
+    });
 
     return router;
 };

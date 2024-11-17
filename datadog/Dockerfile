@@ -1,0 +1,8 @@
+FROM gcr.io/datadoghq/agent:7
+
+ENV DD_APM_ENABLED=true \
+    DD_LOGS_ENABLED=true \
+    DD_COLLECT_DOCKER_EVENTS=true \
+    DD_COLLECT_DOCKER_METRICS=true \
+    DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+

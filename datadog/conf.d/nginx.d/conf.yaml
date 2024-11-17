@@ -1,0 +1,18 @@
+init_config:
+
+instances:
+  - nginx_status_url: http://nginx:80/nginx_status  
+    ssl_verify: false 
+    tags:
+      - service:nginx
+      
+logs:
+  - type: file
+    path: "/var/log/nginx/access.log"
+    service: "nginx"
+    source: "nginx"
+
+  - type: file
+    path: "/var/log/nginx/error.log"
+    service: "nginx"
+    source: "nginx"

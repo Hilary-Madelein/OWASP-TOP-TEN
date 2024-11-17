@@ -7,7 +7,7 @@
 </head>
 <body>
     <script>
-        // fetch logout and redirect to login
+        // Fetch logout and redirect to login
         fetch('/api/logout')
         .then(response => {
             if (response.ok) {
@@ -16,6 +16,9 @@
             } else {
                 console.log('Logout failed');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
         });
     </script>
 </body>
