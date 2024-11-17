@@ -14,13 +14,6 @@ const courses = require('./courses');
 const authors = require('./authors');
 
 
-const tracer = require('dd-trace').init({
-  analytics: true,
-  tags: {
-    'service.type': 'web'
-  }
-});
-
 const dbConfig = {
   host: process.env.POSTGRES_HOST,
   port: process.env.POSTGRES_PORT,

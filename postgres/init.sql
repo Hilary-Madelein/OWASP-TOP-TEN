@@ -6,7 +6,9 @@ CREATE TABLE roles (
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(30) NOT NULL UNIQUE,
-  password VARCHAR(200) NOT NULL
+  password VARCHAR(200) NOT NULL,
+  is_locked BOOLEAN DEFAULT FALSE,
+  unlock_time TIMESTAMP
 );
 
 CREATE TABLE user_roles (
@@ -69,6 +71,11 @@ CREATE TABLE sessions (
   expires_at TIMESTAMP
 );
 
+CREATE TABLE login_attempts (
+    username VARCHAR(50) PRIMARY KEY,
+    attempts INT DEFAULT 0,
+    last_attempt TIMESTAMP
+);
 
 INSERT INTO roles (role_name) VALUES ('admin');
 INSERT INTO roles (role_name) VALUES ('user');
