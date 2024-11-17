@@ -62,6 +62,14 @@ CREATE TABLE user_payments (
   FOREIGN KEY (payment_id) REFERENCES payments (id)
 );
 
+CREATE TABLE sessions (
+  session_id UUID PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP
+);
+
+
 INSERT INTO roles (role_name) VALUES ('admin');
 INSERT INTO roles (role_name) VALUES ('user');
 
