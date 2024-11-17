@@ -18,7 +18,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             FROM
                 courses c;
             `);
-            console.log(`Database message: ${JSON.stringify(result)}`);
+            console.log(`Database message55555: ${JSON.stringify(result)}`);
             await db.end();
             console.log('Disconnected from database');
             httpRequestsTotal.inc({ endpoint: 'courses', method: 'GET', status_code: '200'});
@@ -54,7 +54,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             WHERE
                 c.id = $1;
             `, [courseId]);
-            console.log(`Database message: ${JSON.stringify(result)}`);
+            console.log(`Database message44444: ${JSON.stringify(result)}`);
             await db.end();
             console.log('Disconnected from database');
             httpRequestsTotal.inc({ endpoint: 'courses_id', method: 'GET', status_code: '200'});

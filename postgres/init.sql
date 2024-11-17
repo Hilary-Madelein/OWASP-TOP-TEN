@@ -6,7 +6,9 @@ CREATE TABLE roles (
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(30) NOT NULL UNIQUE,
-  password VARCHAR(200) NOT NULL
+  password VARCHAR(200) NOT NULL,
+  is_locked BOOLEAN DEFAULT FALSE,
+  unlock_time TIMESTAMP
 );
 
 CREATE TABLE user_roles (
@@ -60,6 +62,19 @@ CREATE TABLE user_payments (
   PRIMARY KEY (user_id, payment_id),
   FOREIGN KEY (user_id) REFERENCES users (id),
   FOREIGN KEY (payment_id) REFERENCES payments (id)
+);
+
+CREATE TABLE sessions (
+  session_id UUID PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP
+);
+
+CREATE TABLE login_attempts (
+    username VARCHAR(50) PRIMARY KEY,
+    attempts INT DEFAULT 0,
+    last_attempt TIMESTAMP
 );
 
 INSERT INTO roles (role_name) VALUES ('admin');

@@ -3,6 +3,8 @@ const cookieParser = require('cookie-parser');
 const Prometheus = require('prom-client');
 const promBundle = require("express-prom-bundle");
 const axios = require('axios');
+const pg = require('pg');
+
 
 const app = express();
 
@@ -10,6 +12,14 @@ const auth = require('./auth');
 const users = require('./users');
 const courses = require('./courses');
 const authors = require('./authors');
+
+
+const tracer = require('dd-trace').init({
+  analytics: true,
+  tags: {
+    'service.type': 'web'
+  }
+});
 
 const dbConfig = {
   host: process.env.POSTGRES_HOST,
@@ -20,7 +30,7 @@ const dbConfig = {
 };
 
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 const toJSON = (str) => {
@@ -29,16 +39,16 @@ const toJSON = (str) => {
   } catch (e) {
     return null;
   }
-}
+};
 
 const metricsMiddleware = promBundle({
   includeMethod: true,
   includePath: true,
   includeStatusCode: true,
   includeUp: true,
-  customLabels: {project_name: 'webapp', project_type: 'test_metrics_labels'},
+  customLabels: { project_name: 'webapp', project_type: 'test_metrics_labels' },
   promClient: {
-      collectDefaultMetrics: {}
+    collectDefaultMetrics: {}
   }
 });
 
@@ -72,24 +82,71 @@ const httpRequestsTotal = new Prometheus.Counter({
 const isPublicPath = (path) => {
   console.log(`path: ${path}`);
   return path === '/login' || path == '/logout' || path === '/metrics' || path === '/' || path.includes('/courses') || path.includes('/authors');
-}
+};
 
-// auth middleware
-app.use((req, res, next) => {
-  const cookieString = req.cookies['main_session'] || '';
-  const cookieValue = Buffer.from(cookieString, 'base64').toString('ascii');
-  const session = toJSON(cookieValue);
-  console.log(`cookie session: ${JSON.stringify(session)}`);
-  if (session?.userId || isPublicPath(req.path)) {
-    req.session = session;
-    next();
-    return;
+app.use(async (req, res, next) => {
+  const path = req.path;
+  console.log(`Current path: ${path}`);
+
+  // Verificar si la ruta es pública
+  if (isPublicPath(path)) {
+    console.log(`Public path accessed: ${path}`);
+    return next();  // Si es una ruta pública, continúa sin verificar la sesión
   }
-  res.status(401).json({error: 'Unauthorized'});
+
+  const encodedSessionData = req.cookies['main_session'];
+
+  if (!encodedSessionData) {
+    console.log('No session cookie found');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Decodificar la cookie y extraer sessionId y userId
+    const sessionData = JSON.parse(Buffer.from(encodedSessionData, 'base64').toString('ascii'));
+    const { sessionId, userId } = sessionData;
+
+    if (!sessionId || !userId) {
+      console.log('Invalid session data');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const db = new pg.Client(dbConfig);
+    await db.connect();
+
+    // Verificar si el session_id es válido y la sesión no ha expirado
+    const sessionResult = await db.query(`
+      SELECT user_id FROM sessions WHERE session_id = $1 AND expires_at > NOW();
+    `, [sessionId]);
+
+    // Si no se encuentra una sesión válida
+    if (sessionResult.rowCount === 0) {
+      console.log('Session not found or expired');
+      await db.end();
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Verificar si el userId de la cookie coincide con el userId de la sesión
+    const storedUserId = sessionResult.rows[0].user_id;
+    if (storedUserId !== userId) {
+      console.log('Session userId does not match');
+      await db.end();
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    req.session = { userId }; 
+    console.log(`Authenticated session for userId: ${userId}`);
+
+    await db.end();
+    next(); 
+  } catch (error) {
+    console.error('Error processing session:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.get('/', (req, res) => {
-  httpRequestsTotal.inc({ endpoint: 'home', method: 'GET', status_code: '200'});
+  httpRequestsTotal.inc({ endpoint: 'home', method: 'GET', status_code: '200' });
   res.send('Welcome to the learning platform');
 });
 
@@ -101,3 +158,4 @@ app.use('/authors', authors(httpRequestsTotal, dbConfig));
 app.listen(8080, async () => {
   console.log('WebApp Server is up and running');
 });
+

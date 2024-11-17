@@ -1,30 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learning Platform</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        /* Navbar Styles */
+        nav {
+            background-color: white;
+            padding: 15px 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        nav .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #202447;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        nav .nav-links {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav .nav-links li {
+            margin-left: 20px;
+        }
+
+        nav .nav-links a {
+            color: #202447;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 10px 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav .nav-links a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background-image: url('https://lh3.googleusercontent.com/proxy/2q3_p_EDiF_iP-L9dq1zJPGZtFcZcvMuph1XYoNeqxZ21yqkxhlLo7EMB9uiKlEPJierXtc0dGuPeg6umsey-fvufG0-iy9PlzYeicU5bjMyCTbbJsiiOK91BtIbwJWjvohRZlKmqzMEqES-c7cFEQ28Ng');
+            background-size: cover;
+            background-position: center;
+            padding: 100px 20px;
+            color: white;
+            text-align: center;
+            position: relative;
+            top: 80px; /* Space for navbar */
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            margin-bottom: 40px;
+        }
+
+        .hero input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .hero button {
+            padding: 10px 20px;
+            background-color: #ff5050;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .hero button:hover {
+            background-color: #cc4040;
+        }
+
+        /* Courses Section */
+        .courses-section {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .courses-section h2 {
+            font-size: 36px;
+            color: #202447;
+            margin-bottom: 40px;
+        }
+
+        .course-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 20px;
+            display: inline-block;
+            width: 300px;
+            text-align: left;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .course-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .course-card h3 {
+            font-size: 22px;
+            color: #202447;
+            margin-bottom: 10px;
+        }
+
+        .course-card p {
+            font-size: 16px;
+            color: #555;
+        }
+
+        .course-card a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #202447;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .course-card a:hover {
+            background-color: #353958;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #202447;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+
+        footer p {
+            font-size: 14px;
+        }
+    </style>
 </head>
+
 <body>
+
+    <!-- Navbar -->
     <nav>
-        <a href="/about">About</a>
-        <a id="profile" href="/profile">Profile</a>
-        <a id="logout" href="/logout">Logout</a>
-        <a id="login" href="/login">Login</a>
+        <div class="logo">Learning Platform</div>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a id="profile" href="/profile">Profile</a></li>
+            <li><a id="logout" href="/logout">Logout</a></li>
+            <li><a id="login" href="/login">Login</a></li>
+        </ul>
     </nav>
-    <h1>Learning Platform</h1>
-    <p>Welcome to the learning platform. This is a simple platform to learn and practice different programming languages and frameworks.</p>
-    <p>Feel free to explore the platform and learn new things.</p>
-    <p>Happy Learning!</p>
-    <h2>Courses</h2>
-    <div id="courses"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Welcome to Learning Platform</h1>
+        <p>Explore courses and start your journey to mastering new skills!</p>
+        <input type="text" placeholder="What do you want to learn?" />
+        <button>Search</button>
+    </section>
+
+    <!-- Courses Section -->
+    <section class="courses-section">
+        <h2>Our Courses</h2>
+        <div id="courses"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Learning Platform. All rights reserved.</p>
+    </footer>
+
     <script>
         const coursesEl = document.getElementById('courses');
         const loginEl = document.getElementById('login');
         const profileEl = document.getElementById('profile');
         const logoutEl = document.getElementById('logout');
 
-        // if user is logged in, show profile link and hide login link
+        // If user is logged in, show profile link and hide login link
         if (document.cookie.includes('main_session')) {
             loginEl.style.display = 'none';
         } else {
@@ -32,7 +223,7 @@
             logoutEl.style.display = 'none';
         }
 
-        // fetch courses and populate list
+        // Fetch courses and populate list
         fetch('/api/courses', {
             method: 'GET',
             headers: {
@@ -43,15 +234,17 @@
         .then(data => {
             console.log(`Courses data: ${JSON.stringify(data)}`);
             coursesEl.innerHTML = data.map(course => `
-                <div style="margin-bottom: 24px; border: 1px; border-radius: 8px;">
-                    <p>${course.course_name} - #${course.course_code}</p>
+                <div class="course-card">
+                    <h3>${course.course_name}</h3>
                     <p>${course.course_description}</p>
                     <a href="/course?courseId=${course.id}">View course</a>
                 </div>
             `).join('');
             console.log('Courses data fetched and populated list');
-        })
+        });
+
     </script>
-    <script type="text/javascript" src="https://localbox/cdn/library.js"></script>
+
 </body>
+
 </html>

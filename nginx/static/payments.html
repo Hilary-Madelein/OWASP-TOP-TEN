@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User payments</title>
+    <title>User Payments</title>
 </head>
 <body>
     <nav>
@@ -18,17 +18,17 @@
     <script>
         const paymentsEl = document.getElementById('payments');
 
-        // read userId from url query
+        // Read userId from URL query
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('userId');
 
-        // human readable date
+        // Human readable date formatter
         const formatDate = (date) => {
             const d = new Date(date);
             return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
         };
 
-        // fetch payments and populate list
+        // Fetch payments and populate list
         fetch(`/api/users/${userId}/payments`, {
             method: 'GET',
             headers: {
@@ -39,10 +39,10 @@
         .then(data => {
             console.log(`Payments data: ${JSON.stringify(data)}`);
             paymentsEl.innerHTML = data.map(payment => `
-                <div style="margin-bottom: 24px; border: 1px; border-radius: 8px;">
-                    <p>ID: ${payment.id}</p>
-                    <p>Date: ${formatDate(payment.date)}</p>
-                    <p>Amount: $${payment.amount}</p>
+                <div style="margin-bottom: 24px; border: 1px solid black; border-radius: 8px; padding: 16px;">
+                    <p><strong>ID:</strong> ${payment.id}</p>
+                    <p><strong>Date:</strong> ${formatDate(payment.date)}</p>
+                    <p><strong>Amount:</strong> $${payment.amount}</p>
                 </div>
             `).join('');
             console.log('Payments data fetched and populated list');

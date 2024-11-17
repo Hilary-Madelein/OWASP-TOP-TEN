@@ -1,37 +1,77 @@
 version: "3.8"
+
+networks:
+  monitoring_network:
+    driver: bridge
+
 services:
-    postgres:
-        container_name: postgres
-        build:
-            context: ./postgres
-    backend:
-        container_name: backend
-        restart: always
-        depends_on:
-            - postgres
-        environment:
-            - POSTGRES_HOST=postgres
-            - POSTGRES_PORT=5432
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=admin
-            - POSTGRES_DB=postgres
-            - METRICS_USER=admin
-            - METRICS_PASSWORD=admin
-        build:
-            context: ./backend
-    prometheus:
-        container_name: prometheus
-        build:
-            context: prometheus
-    grafana:
-        container_name: grafana
-        build:
-            context: grafana
-    nginx:
-        container_name: nginx
-        restart: always
-        build:
-            context: ./nginx
-        ports:
-            - "80:80"
-            - "443:443"
+  postgres:
+    container_name: postgres
+    build:
+      context: ./postgres
+    networks:
+      - monitoring_network
+
+  backend:
+    container_name: backend
+    restart: always
+    build:
+      context: ./backend
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=postgres
+      - METRICS_USER=admin
+      - METRICS_PASSWORD=admin
+      - DD_AGENT_HOST=datadog              
+      - DD_SERVICE=backend                 
+      - DD_TRACE_ENABLED=true            
+      - DD_ENV=development                 
+      - DD_LOGS_INJECTION=true            
+      - DD_TAGS=service.type:web              
+    depends_on:
+      - postgres
+      - datadog
+    ports:
+      - "8080:8080"           
+    networks:
+      - monitoring_network
+
+  nginx:
+    container_name: nginx
+    restart: always
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DD_AGENT_HOST=datadog
+      - DD_ENV=production
+      - DD_SERVICE=nginx                
+    networks:
+      - monitoring_network
+
+  datadog:
+    container_name: datadog
+    build:
+      context: ./datadog
+    environment:
+      - DD_API_KEY=${DD_API_KEY}          
+      - DD_SITE=${DD_SITE}                 
+      - DD_ENV=${DD_ENV}               
+      - DD_COLLECT_DOCKER_EVENTS=true 
+      - DD_COLLECT_DOCKER_METRICS=true 
+      - DD_LOGS_ENABLED=true         
+      - DD_APM_ENABLED=true              
+      - DD_CONTAINER_EXCLUDE="name:datadog" 
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./datadog/conf.d/nginx.d:/etc/datadog-agent/conf.d/nginx.d:ro 
+    networks:
+      - monitoring_network
