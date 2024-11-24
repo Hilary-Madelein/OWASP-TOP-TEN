@@ -5,214 +5,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f6f9;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* Navbar Styles */
-        nav {
-            background-color: #202447;
-            padding: 15px 20px;
-            width: 100%;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Logo Style */
-        nav .logo {
-            font-size: 20px;
-            font-weight: bold;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        /* Navigation Links */
-        nav .nav-links {
-            display: flex;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        nav .nav-links li {
-            margin-left: 20px;
-        }
-
-        nav .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-size: 16px;
-            padding: 10px 15px;
-            transition: background-color 0.3s ease;
-        }
-
-        nav .nav-links a:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-        }
-
-        .container {
-            background-color: white;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 600px;
-            border-radius: 10px;
-            margin-top: 100px;
-            /* Adjusted space to avoid overlapping with navbar */
-        }
-
-        h3 {
-            text-align: center;
-            color: #202447;
-            margin-bottom: 30px;
-            font-size: 24px;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        form label {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #202447;
-        }
-
-        form input,
-        form textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        form button {
-            background-color: #353958;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            margin-top: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        form button:hover {
-            background-color: #202447;
-        }
-
-        #profile-picture {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 20px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        #error {
-            color: red;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        #success {
-            color: green;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .form-container {
-            max-width: 500px;
-            width: 100%;
-            margin: 0 auto;
-        }
-    </style>
+    <link rel="stylesheet" href="./css/profile_style.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js"></script>
 </head>
 
 <body>
-
     <!-- Navbar -->
     <nav>
         <div class="logo">My Profile</div>
         <ul class="nav-links">
-            <li><a href="/">Home</a></li>
             <li><a href="/about">About</a></li>
             <li><a id="admin" href="/admin">Admin</a></li>
-            <li><a id="courses" href="#">Courses</a></li>
-            <li><a id="payments" href="#">Payments</a></li>
+            <li><a id="courses" href="/courses">Courses</a></li>
+            <li><a id="payments" href="/payments">Payments</a></li>
             <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>
 
+    <!-- Main Container -->
     <div class="container">
-        <h3>Perfil</h3>
-        <p>Bienvenido a tu perfil. Aquí puedes ver y actualizar tu información.</p>
+        <!-- Profile Picture Section -->
+        <div class="profile-picture-container">
+            <img id="profile-picture" alt="Foto de perfil" />
+            <h3 id="user-role">Usuario</h3>
+            <p id="success" class="success-message"></p>
+            <p id="error" class="error-message"></p>
+        </div>
+
+        <!-- Form Section -->
         <div class="form-container">
-            <div>
-                <p id="error"></p>
-                <p id="success"></p>
-                <img style="width: 120px;height: 120px; border-radius: 50%; object-fit: cover;" id="profile-picture"
-                    alt="Profile picture" />
-            </div>
             <form id="profile">
-                <div>
-                    <img id="profile-picture" alt="Foto de perfil" />
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input id="username" name="username" type="text" placeholder="Usuario" required readonly
+                        minlength="3" maxlength="20" pattern="[A-Za-z0-9]+" title="Solo letras y números" />
                 </div>
 
-                <label for="username">Usuario</label>
-                <input id="username" name="username" type="text" placeholder="Usuario" required minlength="3"
-                    maxlength="20" pattern="[A-Za-z0-9]+" title="Solo letras y números" />
+                <div class="form-group">
+                    <label for="bio">Biografía</label>
+                    <textarea id="bio" name="bio" placeholder="Biografía" rows="4" maxlength="200" readonly></textarea>
+                </div>
 
-                <label for="bio">Biografía</label>
-                <textarea id="bio" name="bio" placeholder="Biografía" rows="4" maxlength="200"></textarea>
+                <div class="form-group">
+                    <label for="first_name">Nombre</label>
+                    <input id="first_name" name="first_name" type="text" placeholder="Nombre" required readonly
+                        minlength="2" maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
+                </div>
 
-                <label for="first_name">Nombre</label>
-                <input id="first_name" name="first_name" type="text" placeholder="Nombre" required minlength="2"
-                    maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
-                // fetch user data and populate form
-                const fetchUserData = async () => {
-                console.log('Fetching user data...');
-                console.log(`Cookies: ${document.cookie}`);
-                const session = document.cookie.split(';').find(c => {
-                console.log(`Cookie: ${c}`);
-                return c.includes('main_session');
-                });
-                console.log(`Session: ${session}`);
+                <div class="form-group">
+                    <label for="last_name">Apellido</label>
+                    <input id="last_name" name="last_name" type="text" placeholder="Apellido" required readonly
+                        minlength="2" maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
+                </div>
 
-                <label for="last_name">Apellido</label>
-                <input id="last_name" name="last_name" type="text" placeholder="Apellido" required minlength="2"
-                    maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input id="email" name="email" type="email" placeholder="Correo Electrónico" required readonly />
+                </div>
 
-                <label for="email">Correo Electrónico</label>
-                <input id="email" name="email" type="email" placeholder="Correo electrónico" required />
+                <div class="form-group">
+                    <label for="phone">Teléfono</label>
+                    <input id="phone" name="phone" type="tel" placeholder="Teléfono" pattern="^[0-9\s-]{7,15}$"
+                        title="Solo números y guiones" readonly />
+                </div>
 
-                <label for="phone">Teléfono</label>
-                <input id="phone" name="phone" type="tel" placeholder="Teléfono" pattern="^[0-9\s-]{7,15}$"
-                    title="Solo números y guiones" />
+                <div class="form-group">
+                    <label for="website">Perfil de LinkedIn</label>
+                    <input id="website" name="website" type="text" placeholder="LinkedIn" readonly />
+                </div>
 
-                <label for="website">Perfil de LinkedIn</label>
-                <input id="website" name="website" type="url" placeholder="LinkedIn" />
-
-                <button type="submit">Actualizar</button>
+                <!-- Buttons -->
+                <div class="buttons-container">
+                    <button id="edit-button" type="button">Editar</button>
+                    <button id="save-button" type="submit" style="display: none;">Guardar</button>
+                    <button id="cancel-button" type="button" style="display: none;">Cancelar</button>
+                </div>
             </form>
         </div>
     </div>
@@ -220,19 +88,12 @@
     <script>
         const profile = document.getElementById('profile');
         const profilePicture = document.getElementById('profile-picture');
-        const errorEl = document.getElementById('error');
-        const successEl = document.getElementById('success');
-        const coursesEl = document.getElementById('courses');
-        const paymentsEl = document.getElementById('payments');
-        const adminEl = document.getElementById('admin');
+        const editButton = document.getElementById('edit-button');
+        const saveButton = document.getElementById('save-button');
+        const cancelButton = document.getElementById('cancel-button');
+        const profileFields = document.querySelectorAll('#profile input, #profile textarea');
 
-        errorEl.addEventListener('click', () => {
-            errorEl.innerText = '';
-        });
-
-        successEl.addEventListener('click', () => {
-            successEl.innerText = '';
-        });
+        let originalData = {};
 
         const sanitizeInput = (input) => {
             const element = document.createElement('div');
@@ -240,122 +101,117 @@
             return element.innerHTML;
         };
 
-        const fetchUserData = async () => {
-            console.log('Fetching user data...');
-            const session = document.cookie.split(';').find(c => c.includes('main_session'));
+        const enableEditing = () => {
+            originalData = {}; // Guarda los datos originales
+            profileFields.forEach((field) => {
+                originalData[field.name] = field.value; // Almacena el valor original
+                field.readOnly = false; // Habilita los campos
+                field.classList.add('editable'); // Agrega estilo de edición
+            });
+            editButton.style.display = 'none'; // Oculta el botón "Editar"
+            saveButton.style.display = 'inline-block'; // Muestra el botón "Guardar"
+            cancelButton.style.display = 'inline-block'; // Muestra el botón "Cancelar"
+        };
 
-            if (!session) {
-                window.location.href = '/logout';
+        const cancelEditing = () => {
+            profileFields.forEach((field) => {
+                field.value = originalData[field.name]; // Restaura los valores originales
+                field.readOnly = true; // Deshabilita los campos
+                field.classList.remove('editable'); // Elimina estilo de edición
+            });
+            editButton.style.display = 'inline-block'; // Muestra el botón "Editar"
+            saveButton.style.display = 'none'; // Oculta el botón "Guardar"
+            cancelButton.style.display = 'none'; // Oculta el botón "Cancelar"
+        };
+
+        const saveChanges = async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(profile);
+            const updatedData = {};
+
+            for (const [key, value] of formData.entries()) {
+                updatedData[key] = sanitizeInput(value.trim());
             }
 
-            const sessionData = atob(decodeURIComponent(session.split('=')[1]));
-            const { userId, role } = JSON.parse(sessionData);
-
-            if (role !== 'admin') {
-                adminEl.style.display = 'none';
-            }
-
-            coursesEl.href = `/courses?userId=${userId}`;
-            paymentsEl.href = `/payments?userId=${userId}`;
-
-            // Función para obtener datos del usuario
-            const fetchUserData = async () => {
-                try {
-                    // Realiza la solicitud para obtener datos del usuario
-                    const response = await fetch(`/api/users/${userId}`);
-
-                    // Manejo de error si la respuesta no es exitosa
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch user data: ${response.status} ${response.statusText}`);
-                    }
-
-                    // Extrae datos en formato JSON
-                    const data = await response.json();
-                    console.log(`User data: ${JSON.stringify(data)}`);
-
-                    // Destructura los datos necesarios
-                    const { username, bio, first_name, last_name, email, phone, website } = data;
-
-                    // Asigna los datos al formulario
-                    profilePicture.src = `/files/${username}.jpg`;
-                    profile.username.value = username;
-                    profile.bio.value = bio;
-                    profile.first_name.value = first_name;
-                    profile.last_name.value = last_name;
-                    profile.email.value = email;
-                    profile.phone.value = phone;
-                    profile.website.value = website;
-
-                    console.log('User data fetched and populated form');
-                } catch (error) {
-                    console.error('Error fetching user data:', error);
-                    errorEl.innerText = 'Error fetching user data. Please try again later.';
-                }
-            }};
-
-            // Invoca la función después de definirla
-            fetchUserData();
-
-
-            profile.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                errorEl.innerText = ''; // Borra mensajes globales
-                successEl.innerText = ''; // Borra mensajes globales
-
-                // Obtén datos del formulario
+            try {
                 const session = document.cookie.split(';').find(c => c.includes('main_session'));
                 const sessionData = atob(decodeURIComponent(session.split('=')[1]));
                 const { userId } = JSON.parse(sessionData);
 
-                const formData = new FormData(profile);
-                const formDataObject = Object.fromEntries(formData);
-                console.log(`Form data: ${JSON.stringify(formDataObject)}`);
-
-                // Limpiar errores previos
-                const errorFields = profile.querySelectorAll('.error-field');
-                errorFields.forEach((el) => el.remove());
-
-                // Enviar datos al servidor
-                fetch(`/api/users/${userId}`, {
+                const response = await fetch(`/api/users/${userId}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formDataObject)
-                })
-                    .then(async (response) => {
-                        if (response.ok) {
-                            console.log('Update successful');
-                            successEl.innerText = 'Update successful';
-                        } else {
-                            const errorData = await response.json(); // Obtener los errores específicos del backend
-                            console.log('Update failed:', errorData);
+                    body: JSON.stringify(updatedData),
+                });
 
-                            // Si hay errores mapeados en el servidor, mostrarlos
-                            if (errorData.errors) {
-                                Object.entries(errorData.errors).forEach(([field, message]) => {
-                                    const input = profile.querySelector(`[name="${field}"]`);
-                                    if (input) {
-                                        const errorMsg = document.createElement('p');
-                                        errorMsg.innerText = message;
-                                        errorMsg.style.color = 'red';
-                                        errorMsg.classList.add('error-field');
-                                        input.insertAdjacentElement('afterend', errorMsg);
-                                    }
-                                });
-                            } else {
-                                errorEl.innerText = 'Update failed. Please try again.';
-                            }
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                        errorEl.innerText = 'An error occurred while updating the profile.';
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: 'Perfil actualizado correctamente.',
                     });
-            });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al actualizar el perfil.',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: `Error: ${error.message}`,
+                });
+            }
 
+            cancelEditing(); // Desactiva los campos después de guardar
+        };
+
+
+
+        const fetchUserData = async () => {
+            try {
+                const session = document.cookie.split(';').find(c => c.includes('main_session'));
+                if (!session) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                const sessionData = atob(decodeURIComponent(session.split('=')[1]));
+                const { userId } = JSON.parse(sessionData);
+
+                const response = await fetch(`/api/users/${userId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    profilePicture.src = `/files/${sanitizeInput(data.username)}.jpg`;
+                    profileFields.forEach((field) => {
+                        field.value = sanitizeInput(data[field.name]) || '';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al cargar los datos del usuario.',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: `Error: ${error.message}`,
+                });
+            }
+        };
+
+        editButton.addEventListener('click', enableEditing);
+        cancelButton.addEventListener('click', cancelEditing);
+        profile.addEventListener('submit', saveChanges);
+        fetchUserData();
     </script>
-
 </body>
 
 </html>

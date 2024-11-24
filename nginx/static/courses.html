@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learning Platform</title>
     <style>
+        /* General Styles */
         body {
             margin: 0;
             padding: 0;
@@ -43,22 +44,27 @@
             border-radius: 5px;
         }
 
-        /* Main Content */
+        /* Hero Section */
         .container {
             padding: 100px 20px;
             text-align: center;
-            background-color: #f4f6f9;
+            background: linear-gradient(rgba(32, 36, 71, 0.6), rgba(32, 36, 71, 0.6)),
+                        url('https://www.oficinasmontiel.com/blog/wp-content/uploads/2022/03/a22.webp') no-repeat center center;
+            background-size: cover;
+            color: white;
+            height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .container h1 {
-            font-size: 36px;
-            color: #202447;
+            font-size: 48px;
             margin-bottom: 20px;
         }
 
         .container p {
             font-size: 18px;
-            color: #555;
             margin-bottom: 20px;
         }
 
@@ -143,11 +149,10 @@
         <a id="login" href="/login">Login</a>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Hero Section -->
     <section class="container">
-        <h1>Learning Platform</h1>
-        <p>Welcome to the learning platform. This is a simple platform to learn and practice different programming languages and frameworks.</p>
-        <p>Feel free to explore the platform and learn new things.</p>
+        <h1>Welcome to Learning Platform</h1>
+        <p>Discover courses, improve your skills, and expand your knowledge with our platform.</p>
         <p>Happy Learning!</p>
     </section>
 

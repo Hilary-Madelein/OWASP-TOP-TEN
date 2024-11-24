@@ -17,7 +17,6 @@ module.exports = function (httpRequestsTotal, dbConfig) {
         }
     });
 
-    // Aplicar el limitador solo a la ruta /login
     router.post('/login', limiter, async (req, res) => {
         const { username, password } = req.body;
     
@@ -35,8 +34,10 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             await db.connect();
             const currentTime = new Date();
     
-            // Verificar intentos fallidos por IP
+            // Obtener IP del cliente
             const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    
+            // Verificar intentos fallidos por IP
             const ipAttemptResult = await db.query(`
                 SELECT attempts, last_attempt
                 FROM ip_login_attempts
@@ -54,10 +55,11 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     console.log(`IP ${clientIp} is temporarily locked.`);
                     httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '429' });
                     return res.status(429).json({
-                        error: 'Too many login attempts from this IP. Try again later.',
-                        timeRemaining
+                        error: 'Too many login attempts. Please try again later.',
+                        timeRemaining: timeRemaining // Tiempo restante en segundos
                     });
                 }
+                
     
                 if (timeElapsed >= lockoutPeriod) {
                     // Restablecer intentos fallidos
@@ -69,11 +71,23 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                 }
             }
     
-            // Intentar obtener usuario
+            // Verificar si el usuario existe
             const userResult = await db.query(`
-                SELECT id, username, password, role_name, is_locked, unlock_time
-                FROM users
-                WHERE username = $1;
+                SELECT 
+                    u.id, 
+                    u.username, 
+                    u.password, 
+                    u.is_locked, 
+                    u.unlock_time, 
+                    r.role_name
+                FROM 
+                    users u
+                JOIN 
+                    user_roles ur ON u.id = ur.user_id
+                JOIN 
+                    roles r ON ur.role_id = r.id
+                WHERE 
+                    u.username = $1;
             `, [username]);
     
             if (userResult.rowCount === 0) {
@@ -85,9 +99,9 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     SET attempts = ip_login_attempts.attempts + 1, last_attempt = $2;
                 `, [clientIp, currentTime]);
     
-                console.log(`Login failed for username: ${username}`);
+                console.log(`Login failed for non-existent username: ${username}`);
                 httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
-                return res.status(401).json({ error: 'Invalid username or password' });
+                return res.status(401).json({ error: 'Invalid username' });
             }
     
             const user = userResult.rows[0];
@@ -115,7 +129,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
     
                 console.log(`Invalid password for username: ${username}`);
                 httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
-                return res.status(401).json({ error: 'Invalid username or password' });
+                return res.status(401).json({ error: 'Invalid password' });
             }
     
             // Restablecer intentos fallidos por IP
@@ -140,7 +154,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             const sessionEncoded = Buffer.from(JSON.stringify(session), 'ascii').toString('base64');
     
             res.cookie('main_session', sessionEncoded, {
-                httpOnly: true,
+                httpOnly: false,
                 secure: true,
                 sameSite: 'strict',
                 maxAge: 1000 * 60 * 60 * 24 * 30 // 30 días
@@ -157,6 +171,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             await db.end();
         }
     });
+    
     
     router.get('/logout', async (req, res) => {
         const encodedSessionData = req.cookies['main_session'];

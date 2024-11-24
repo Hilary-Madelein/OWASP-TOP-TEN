@@ -4,23 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course View</title>
+    <link rel="stylesheet" href="./css/course_style.css">
 </head>
 <body>
+    <!-- Navbar -->
     <nav>
-        <a href="/">Home</a>
-        <a href="/about">About</a>
-        <a id="profile" href="/profile">Profile</a>
-        <a id="logout" href="/logout">Logout</a>
-        <a id="login" href="/login">Login</a>
+        <div class="logo">CourseHub</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a id="logout" href="/logout">Logout</a></li>
+            <li><a id="login" href="/login">Login</a></li>
+        </ul>
     </nav>
-    <div id="course"></div>
+
+    <!-- Main Content -->
+    <div class="course-container">
+        <div class="course-banner">
+            <img id="course-image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjSNGFh6ukrZ6YT7-eYFMoxcT2CcoXCvxabA&s" alt="Course Image">
+            <div class="banner-overlay">
+                <h1 id="course-name">Course Name</h1>
+                <p id="course-code">Course Code</p>
+            </div>
+        </div>
+
+        <div class="course-details">
+            <div class="course-info">
+                <h2>About the Course</h2>
+                <p id="course-description">
+                    This is where the main course description goes. It provides details about the course, objectives, and what you will learn.
+                </p>
+            </div>
+            <div class="author-info">
+                <h2>Meet the Author</h2>
+                <div class="author-card">
+                    <img id="author-image" src="https://via.placeholder.com/100" alt="Author Image">
+                    <div class="author-details">
+                        <h3 id="author-name">Author Name</h3>
+                        <p id="author-email">author@example.com</p>
+                        <p id="author-bio">This is a short bio about the author. They are experts in their field and have a passion for teaching.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const courseEl = document.getElementById('course');
         const loginEl = document.getElementById('login');
         const profileEl = document.getElementById('profile');
         const logoutEl = document.getElementById('logout');
+        const courseName = document.getElementById('course-name');
+        const courseCode = document.getElementById('course-code');
+        const courseDescription = document.getElementById('course-description');
+        const authorImage = document.getElementById('author-image');
+        const authorName = document.getElementById('author-name');
+        const authorEmail = document.getElementById('author-email');
+        const authorBio = document.getElementById('author-bio');
 
-        // If user is logged in, show profile link and hide login link
         if (document.cookie.includes('main_session')) {
             loginEl.style.display = 'none';
         } else {
@@ -28,11 +68,9 @@
             logoutEl.style.display = 'none';
         }
 
-        // Read courseId from URL query
         const urlParams = new URLSearchParams(window.location.search);
         const courseId = urlParams.get('courseId');
 
-        // Fetch course and populate list
         fetch(`/api/courses/${courseId}`, {
             method: 'GET',
             headers: {
@@ -41,25 +79,21 @@
         })
         .then(response => response.json())
         .then(async (data) => {
-            console.log(`Course data: ${JSON.stringify(data)}`);
+            courseName.textContent = data.course_name;
+            courseCode.textContent = data.course_code;
+            courseDescription.textContent = data.course_description;
+
             const authorId = data.author_id;
             const author = await fetch(`/api/authors?datasource=https://dummyjson.com/users/${authorId}`)
                 .then(res => res.json());
 
-            courseEl.innerHTML = `
-                <h1>${data.course_name}</h1>
-                <p>${data.course_code}</p>
-                <p>${data.course_description}</p>
-                <p>About the author</p>
-                <img src="${author.image}" alt="${author.firstName} ${author.lastName}" width="100" height="100">
-                <p>${author.firstName} ${author.lastName}</p>
-                <p>${author.email}</p>
-            `;
-            console.log('Course data fetched and populated list');
+            authorImage.src = author.image;
+            authorName.textContent = `${author.firstName} ${author.lastName}`;
+            authorEmail.textContent = author.email;
+            authorBio.textContent = author.bio || "This is an amazing author!";
         })
         .catch(error => {
             console.error('Error:', error);
-            courseEl.innerText = 'Error: ' + error;
         });
     </script>
 </body>

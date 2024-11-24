@@ -14,13 +14,13 @@
     <div class="container">
         <!-- Sección izquierda -->
         <div class="left">
+            <div class="curve"></div>
             <div class="logo">
-                <!-- Aquí reemplaza con el logo que desees -->
-                <img src="https://images.vexels.com/content/204682/preview/cat-sitting-silhouette-cat-5ce05f.png" alt="Logo" />
+                <img src="https://images.vexels.com/content/204682/preview/cat-sitting-silhouette-cat-5ce05f.png"
+                    alt="Logo">
             </div>
             <h1>Welcome Back!</h1>
-            <p>To stay connected with us, please log in with your personal info.</p>
-            <button class="btn-signin">Sign In</button>
+            <p>A learning platform</p>
         </div>
 
         <!-- Sección derecha -->
@@ -28,12 +28,10 @@
             <h2>Welcome</h2>
             <p>Log in to your account to continue</p>
             <form id="loginForm">
-                <input type="text" id="username" placeholder="Username" required minlength="3" maxlength="30" />
-                <input type="password" id="password" placeholder="Password" required minlength="2" maxlength="30" />
-                <a href="#" class="forgot-password">Forgot your password?</a>
-                <button type="submit" id="loginButton">Log In</button>
+                <input type="text" id="username" placeholder="Usuario" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Log In</button>
             </form>
-            <p class="signup-text">Don't have an account? <a href="#">Sign up</a></p>
         </div>
     </div>
 
@@ -98,7 +96,6 @@
                 return;
             }
 
-            // Simular llamada al servidor con fetch
             fetch('/api/login', {
                 method: 'POST',
                 credentials: 'include',
@@ -108,7 +105,14 @@
                 body: JSON.stringify({ username, password }),
             })
                 .then(async (response) => {
-                    const data = await response.json();
+                    let data;
+                    try {
+                        data = await response.json(); // Intentar parsear la respuesta como JSON
+                        console.log(data);
+                    } catch (e) {
+                        console.error('Error parsing response JSON:', e);
+                        data = {}; // Si falla, asegurarse de que `data` no sea null
+                    }
 
                     if (response.ok) {
                         Swal.fire({
@@ -118,38 +122,49 @@
                             timer: 2000,
                             showConfirmButton: false,
                         }).then(() => {
-                            window.location = '/profile'; // Cambia esta ruta según sea necesario
+                            window.location = '/profile'; // Redirige al perfil
                         });
                     } else if (response.status === 429 && data.timeRemaining) {
-                        // Si hay demasiados intentos, inicia el temporizador de bloqueo
-                        startLockoutTimer(data.timeRemaining);
-                    } else if (response.status === 401 && data.error === 'Invalid username') {
+                        // Bloqueo por demasiados intentos
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Invalid Username',
-                            text: 'Please check your username and try again.',
+                            icon: 'warning',
+                            title: 'Account Locked',
+                            html: `Too many login attempts. Please try again in <b>${Math.floor(data.timeRemaining / 60)} minutes and ${data.timeRemaining % 60} seconds</b>.`,
                         });
-                    } else if (response.status === 401 && data.error === 'Invalid password') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Invalid Password',
-                            text: 'Please check your password and try again.',
-                        });
+                    } else if (response.status === 401) {
+                        if (data.error === 'Invalid username') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid Username',
+                                text: 'The username you entered does not exist.',
+                            });
+                        } else if (data.error === 'Invalid password') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid Password',
+                                text: 'The password you entered is incorrect.',
+                            });
+                        }
                     } else {
+                        // Mensaje genérico para otros errores
                         Swal.fire({
                             icon: 'error',
                             title: 'Login Failed',
-                            text: 'An unknown error occurred. Please try again.',
+                            text: data.error || 'An unknown error occurred. Please try again.',
                         });
                     }
                 })
                 .catch((error) => {
+                    // Manejo de errores de red u otros problemas inesperados
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: 'An error occurred: ' + error.message,
+                        title: 'Network Error',
+                        text: `An error occurred: ${error.message}`,
                     });
                 });
+
+
+
         });
     </script>
 </body>

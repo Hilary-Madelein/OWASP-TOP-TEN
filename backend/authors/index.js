@@ -37,9 +37,14 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             console.log(`Fetching data from: ${datasource}`);
             const response = await axios.get(datasource);
 
+            // Asegurarse de que response.data tiene el formato esperado
+            if (!response || !response.data) {
+                throw new Error('Datasource response is empty or malformed');
+            }
+
             // Incrementar métricas y responder con los datos
             httpRequestsTotal.inc({ endpoint: 'authors', method: 'GET', status_code: '200' });
-            res.json({ success: true, data: response.data });
+            res.json(response.data); // Aquí devolvemos `response.data` directamente
         } catch (err) {
             console.error(`Error fetching data from datasource: ${err.message}`);
 

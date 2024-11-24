@@ -91,65 +91,74 @@ app.use(async (req, res, next) => {
   // Verificar si la ruta es pública
   if (isPublicPath(path)) {
     console.log(`Public path accessed: ${path}`);
-    return next();  // Si es una ruta pública, continúa sin verificar la sesión
+    return next(); // Continuar si es una ruta pública
   }
 
   const encodedSessionData = req.cookies['main_session'];
-  
 
   if (!encodedSessionData) {
     console.log('No session cookie found');
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized - No session cookie' });
   }
 
   try {
-    // Decodificar la cookie y extraer sessionId y userId
+    // Decodificar y parsear la cookie de sesión
     const sessionData = JSON.parse(Buffer.from(encodedSessionData, 'base64').toString('ascii'));
     const { sid: sessionId, userId } = sessionData;
 
-    console.log('main_session', sessionData);
+    console.log('Decoded session data:', sessionData);
 
     if (!sessionId || !userId) {
       console.log('Invalid session data');
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized - Invalid session data' });
     }
 
     const db = new pg.Client(dbConfig);
     await db.connect();
 
-    // Verificar si el session_id es válido y la sesión no ha expirado
+    // Query para verificar la sesión activa
     const sessionResult = await db.query(`
-      SELECT user_id FROM sessions WHERE session_id = $1 AND expires_at > NOW();
+      SELECT user_id 
+      FROM sessions 
+      WHERE session_id = $1 AND expires_at > NOW();
     `, [sessionId]);
 
-    console.log('Session not found or expired', sessionResult);
-    
+    console.log('Session query result:', sessionResult.rows);
 
-    // Si no se encuentra una sesión válida
     if (sessionResult.rowCount === 0) {
       console.log('Session not found or expired');
       await db.end();
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized - Session not found or expired' });
     }
 
-    // Verificar si el userId de la cookie coincide con el userId de la sesión
     const storedUserId = sessionResult.rows[0].user_id;
+
+    // Validar si el `userId` en la cookie coincide con el de la sesión
     if (storedUserId !== userId) {
-      console.log('Session userId does not match');
+      console.log(`Session userId (${storedUserId}) does not match cookie userId (${userId})`);
       await db.end();
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized - Session userId mismatch' });
     }
 
-    req.session = { userId }; 
+    // Guardar los datos de sesión en `req` para que estén disponibles en la aplicación
+    req.session = { userId };
     console.log(`Authenticated session for userId: ${userId}`);
 
     await db.end();
-    next(); 
+    next(); // Continuar al siguiente middleware
   } catch (error) {
     console.error('Error processing session:', error);
+
+    // Asegurar que la conexión a la base de datos se cierre en caso de error
+    try {
+      const db = new pg.Client(dbConfig);
+      await db.end();
+    } catch (closeError) {
+      console.error('Error closing the database connection:', closeError);
+    }
+
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  }});
 
 app.get('/', (req, res) => {
   httpRequestsTotal.inc({ endpoint: 'home', method: 'GET', status_code: '200' });
@@ -160,6 +169,7 @@ app.use('/', auth(httpRequestsTotal, dbConfig));
 app.use('/users', users(httpRequestsTotal, dbConfig));
 app.use('/courses', courses(httpRequestsTotal, dbConfig));
 app.use('/authors', authors(httpRequestsTotal, dbConfig));
+app.set('trust proxy', 'loopback'); 
 
 app.listen(8080, async () => {
   console.log('WebApp Server is up and running');
