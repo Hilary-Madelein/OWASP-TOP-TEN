@@ -72,7 +72,8 @@
             padding: 40px;
             width: 600px;
             border-radius: 10px;
-            margin-top: 100px; /* Adjusted space to avoid overlapping with navbar */
+            margin-top: 100px;
+            /* Adjusted space to avoid overlapping with navbar */
         }
 
         h3 {
@@ -169,6 +170,8 @@
             <div>
                 <p id="error"></p>
                 <p id="success"></p>
+                <img style="width: 120px;height: 120px; border-radius: 50%; object-fit: cover;" id="profile-picture"
+                    alt="Profile picture" />
             </div>
             <form id="profile">
                 <div>
@@ -176,26 +179,35 @@
                 </div>
 
                 <label for="username">Usuario</label>
-                <input id="username" name="username" type="text" placeholder="Usuario" 
-                       required minlength="3" maxlength="20" pattern="[A-Za-z0-9]+" title="Solo letras y números" />
+                <input id="username" name="username" type="text" placeholder="Usuario" required minlength="3"
+                    maxlength="20" pattern="[A-Za-z0-9]+" title="Solo letras y números" />
 
                 <label for="bio">Biografía</label>
                 <textarea id="bio" name="bio" placeholder="Biografía" rows="4" maxlength="200"></textarea>
 
                 <label for="first_name">Nombre</label>
-                <input id="first_name" name="first_name" type="text" placeholder="Nombre" 
-                       required minlength="2" maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
+                <input id="first_name" name="first_name" type="text" placeholder="Nombre" required minlength="2"
+                    maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
+                // fetch user data and populate form
+                const fetchUserData = async () => {
+                console.log('Fetching user data...');
+                console.log(`Cookies: ${document.cookie}`);
+                const session = document.cookie.split(';').find(c => {
+                console.log(`Cookie: ${c}`);
+                return c.includes('main_session');
+                });
+                console.log(`Session: ${session}`);
 
                 <label for="last_name">Apellido</label>
-                <input id="last_name" name="last_name" type="text" placeholder="Apellido" 
-                       required minlength="2" maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
+                <input id="last_name" name="last_name" type="text" placeholder="Apellido" required minlength="2"
+                    maxlength="30" pattern="[A-Za-z]+" title="Solo letras" />
 
                 <label for="email">Correo Electrónico</label>
                 <input id="email" name="email" type="email" placeholder="Correo electrónico" required />
 
                 <label for="phone">Teléfono</label>
-                <input id="phone" name="phone" type="tel" placeholder="Teléfono" 
-                       pattern="^[0-9\s-]{7,15}$" title="Solo números y guiones" />
+                <input id="phone" name="phone" type="tel" placeholder="Teléfono" pattern="^[0-9\s-]{7,15}$"
+                    title="Solo números y guiones" />
 
                 <label for="website">Perfil de LinkedIn</label>
                 <input id="website" name="website" type="url" placeholder="LinkedIn" />
@@ -213,97 +225,137 @@
         const coursesEl = document.getElementById('courses');
         const paymentsEl = document.getElementById('payments');
         const adminEl = document.getElementById('admin');
-    
+
         errorEl.addEventListener('click', () => {
             errorEl.innerText = '';
         });
-    
+
         successEl.addEventListener('click', () => {
             successEl.innerText = '';
         });
-    
+
         const sanitizeInput = (input) => {
             const element = document.createElement('div');
             element.innerText = input;
             return element.innerHTML;
         };
-    
+
         const fetchUserData = async () => {
             console.log('Fetching user data...');
             const session = document.cookie.split(';').find(c => c.includes('main_session'));
-    
+
             if (!session) {
                 window.location.href = '/logout';
             }
-    
+
             const sessionData = atob(decodeURIComponent(session.split('=')[1]));
             const { userId, role } = JSON.parse(sessionData);
-    
+
             if (role !== 'admin') {
                 adminEl.style.display = 'none';
             }
-    
+
             coursesEl.href = `/courses?userId=${userId}`;
             paymentsEl.href = `/payments?userId=${userId}`;
-    
-            try {
-                const response = await fetch(`/api/users/${userId}`);
-                if (response.ok) {
+
+            // Función para obtener datos del usuario
+            const fetchUserData = async () => {
+                try {
+                    // Realiza la solicitud para obtener datos del usuario
+                    const response = await fetch(`/api/users/${userId}`);
+
+                    // Manejo de error si la respuesta no es exitosa
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch user data: ${response.status} ${response.statusText}`);
+                    }
+
+                    // Extrae datos en formato JSON
                     const data = await response.json();
-    
-                    profilePicture.src = `/files/${sanitizeInput(data.username)}.jpg`;
-                    profile.username.value = sanitizeInput(data.username);
-                    profile.bio.value = sanitizeInput(data.bio);
-                    profile.first_name.value = sanitizeInput(data.first_name);
-                    profile.last_name.value = sanitizeInput(data.last_name);
-                    profile.email.value = sanitizeInput(data.email);
-                    profile.phone.value = sanitizeInput(data.phone);
-                    profile.website.value = sanitizeInput(data.website);
-                } else {
-                    errorEl.innerText = 'Error al cargar los datos del usuario';
+                    console.log(`User data: ${JSON.stringify(data)}`);
+
+                    // Destructura los datos necesarios
+                    const { username, bio, first_name, last_name, email, phone, website } = data;
+
+                    // Asigna los datos al formulario
+                    profilePicture.src = `/files/${username}.jpg`;
+                    profile.username.value = username;
+                    profile.bio.value = bio;
+                    profile.first_name.value = first_name;
+                    profile.last_name.value = last_name;
+                    profile.email.value = email;
+                    profile.phone.value = phone;
+                    profile.website.value = website;
+
+                    console.log('User data fetched and populated form');
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                    errorEl.innerText = 'Error fetching user data. Please try again later.';
                 }
-            } catch (error) {
-                errorEl.innerText = 'Error: ' + error.message;
-            }
-        };
-        fetchUserData();
-    
-        profile.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorEl.innerText = '';
-            successEl.innerText = '';
-    
-            const session = document.cookie.split(';').find(c => c.includes('main_session'));
-            const sessionData = atob(decodeURIComponent(session.split('=')[1]));
-            const { userId } = JSON.parse(sessionData);
-    
-            const formData = new FormData(profile);
-            const formDataObject = {};
-    
-            for (const [key, value] of formData.entries()) {
-                formDataObject[key] = sanitizeInput(value.trim());
-            }
-    
-            try {
-                const response = await fetch(`/api/users/${userId}`, {
+            }};
+
+            // Invoca la función después de definirla
+            fetchUserData();
+
+
+            profile.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorEl.innerText = ''; // Borra mensajes globales
+                successEl.innerText = ''; // Borra mensajes globales
+
+                // Obtén datos del formulario
+                const session = document.cookie.split(';').find(c => c.includes('main_session'));
+                const sessionData = atob(decodeURIComponent(session.split('=')[1]));
+                const { userId } = JSON.parse(sessionData);
+
+                const formData = new FormData(profile);
+                const formDataObject = Object.fromEntries(formData);
+                console.log(`Form data: ${JSON.stringify(formDataObject)}`);
+
+                // Limpiar errores previos
+                const errorFields = profile.querySelectorAll('.error-field');
+                errorFields.forEach((el) => el.remove());
+
+                // Enviar datos al servidor
+                fetch(`/api/users/${userId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(formDataObject)
-                });
-    
-                if (response.ok) {
-                    successEl.innerText = 'Actualización exitosa';
-                } else {
-                    errorEl.innerText = 'Error al actualizar el perfil';
-                }
-            } catch (error) {
-                errorEl.innerText = 'Error: ' + error.message;
-            }
-        });
+                })
+                    .then(async (response) => {
+                        if (response.ok) {
+                            console.log('Update successful');
+                            successEl.innerText = 'Update successful';
+                        } else {
+                            const errorData = await response.json(); // Obtener los errores específicos del backend
+                            console.log('Update failed:', errorData);
+
+                            // Si hay errores mapeados en el servidor, mostrarlos
+                            if (errorData.errors) {
+                                Object.entries(errorData.errors).forEach(([field, message]) => {
+                                    const input = profile.querySelector(`[name="${field}"]`);
+                                    if (input) {
+                                        const errorMsg = document.createElement('p');
+                                        errorMsg.innerText = message;
+                                        errorMsg.style.color = 'red';
+                                        errorMsg.classList.add('error-field');
+                                        input.insertAdjacentElement('afterend', errorMsg);
+                                    }
+                                });
+                            } else {
+                                errorEl.innerText = 'Update failed. Please try again.';
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                        errorEl.innerText = 'An error occurred while updating the profile.';
+                    });
+            });
+
     </script>
-    
+
 </body>
 
 </html>
