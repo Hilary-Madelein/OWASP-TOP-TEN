@@ -3,51 +3,64 @@ const { createHash } = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const pg = require('pg');
 const router = express.Router();
+const expressRateLimit = require('express-rate-limit');
 
 module.exports = function (httpRequestsTotal, dbConfig) {
+    // Configurar el limitador de solicitudes
+    const limiter = expressRateLimit({
+        windowMs: 1000 * 60 * 60 * 24, // 1 día
+        max: 5, // Máximo 5 solicitudes por IP
+        handler: (req, res) => {
+            console.log(`Too many requests from this IP: ${req.ip}`);
+            httpRequestsTotal.inc({ endpoint: 'login', method: req.method, status_code: '429' });
+            res.status(429).json({ error: 'Too many requests from this IP, please try again after 24 hours' });
+        }
+    });
 
-    router.post('/login', async (req, res) => {
+    // Aplicar el limitador solo a la ruta /login
+    router.post('/login', limiter, async (req, res) => {
         const { username, password } = req.body;
-        const clientIp = req.ip; // Obtener la IP del cliente
-        console.log(`Username: ${username}, Client IP: ${clientIp}`);
-
+    
+        console.log(`Username and password received: ${username}, [password hidden]`);
+    
         if (!username || !password) {
             httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '400' });
             return res.status(400).json({ error: 'Username and password are required' });
         }
-
+    
         const hashedPassword = createHash('sha256').update(password).digest('base64');
         const db = new pg.Client(dbConfig);
-        await db.connect();
-
+    
         try {
+            await db.connect();
             const currentTime = new Date();
-
+    
             // Verificar intentos fallidos por IP
+            const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
             const ipAttemptResult = await db.query(`
                 SELECT attempts, last_attempt
                 FROM ip_login_attempts
                 WHERE ip_address = $1;
             `, [clientIp]);
-
+    
             if (ipAttemptResult.rowCount > 0) {
                 const { attempts, last_attempt } = ipAttemptResult.rows[0];
                 const lastAttemptTime = new Date(last_attempt);
                 const timeElapsed = currentTime - lastAttemptTime;
-                const lockoutPeriod = 15 * 60 * 1000; // 15 minutos en milisegundos
-
+                const lockoutPeriod = 15 * 60 * 1000; // 15 minutos
+    
                 if (attempts >= 5 && timeElapsed < lockoutPeriod) {
-                    const timeRemaining = Math.ceil((lockoutPeriod - timeElapsed) / 1000); // en segundos
+                    const timeRemaining = Math.ceil((lockoutPeriod - timeElapsed) / 1000);
                     console.log(`IP ${clientIp} is temporarily locked.`);
-                    await db.end();
+                    httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '429' });
                     return res.status(429).json({
                         error: 'Too many login attempts from this IP. Try again later.',
-                        timeRemaining: timeRemaining
+                        timeRemaining
                     });
                 }
-
+    
                 if (timeElapsed >= lockoutPeriod) {
-                    // Restablecer intentos fallidos por IP
+                    // Restablecer intentos fallidos
                     await db.query(`
                         UPDATE ip_login_attempts
                         SET attempts = 0, last_attempt = $1
@@ -55,17 +68,15 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     `, [currentTime, clientIp]);
                 }
             }
-
-            // Intentar obtener el usuario desde la base de datos
-            const result = await db.query(`
-                SELECT u.id, u.username, u.password, r.role_name, u.is_locked, u.unlock_time
-                FROM users u
-                JOIN user_roles ur ON u.id = ur.user_id
-                JOIN roles r ON ur.role_id = r.id
-                WHERE u.username = $1;
+    
+            // Intentar obtener usuario
+            const userResult = await db.query(`
+                SELECT id, username, password, role_name, is_locked, unlock_time
+                FROM users
+                WHERE username = $1;
             `, [username]);
-
-            if (result.rowCount === 0) {
+    
+            if (userResult.rowCount === 0) {
                 // Registrar intento fallido por IP
                 await db.query(`
                     INSERT INTO ip_login_attempts (ip_address, attempts, last_attempt)
@@ -73,25 +84,26 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     ON CONFLICT (ip_address) DO UPDATE
                     SET attempts = ip_login_attempts.attempts + 1, last_attempt = $2;
                 `, [clientIp, currentTime]);
-
-                console.log(`Login failed for non-existent username: ${username}`);
-                await db.end();
+    
+                console.log(`Login failed for username: ${username}`);
+                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
                 return res.status(401).json({ error: 'Invalid username or password' });
             }
-
-            const user = result.rows[0];
-
+    
+            const user = userResult.rows[0];
+    
             // Verificar si la cuenta está bloqueada
             if (user.is_locked && new Date() < new Date(user.unlock_time)) {
-                const timeRemaining = Math.ceil((new Date(user.unlock_time) - currentTime) / 1000); // en segundos
+                const timeRemaining = Math.ceil((new Date(user.unlock_time) - currentTime) / 1000);
                 console.log(`Account for username ${username} is temporarily locked.`);
-                await db.end();
+                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '429' });
                 return res.status(429).json({
                     error: 'Account temporarily locked due to multiple failed login attempts.',
-                    timeRemaining: timeRemaining
+                    timeRemaining
                 });
             }
-
+    
+            // Verificar contraseña
             if (user.password !== hashedPassword) {
                 // Registrar intento fallido por IP
                 await db.query(`
@@ -100,47 +112,49 @@ module.exports = function (httpRequestsTotal, dbConfig) {
                     ON CONFLICT (ip_address) DO UPDATE
                     SET attempts = ip_login_attempts.attempts + 1, last_attempt = $2;
                 `, [clientIp, currentTime]);
-
+    
                 console.log(`Invalid password for username: ${username}`);
-                await db.end();
+                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
                 return res.status(401).json({ error: 'Invalid username or password' });
             }
-
-            // Si la autenticación es exitosa, restablecer intentos fallidos por IP
+    
+            // Restablecer intentos fallidos por IP
             await db.query(`
                 DELETE FROM ip_login_attempts
                 WHERE ip_address = $1;
             `, [clientIp]);
-
-            // Crear y guardar la sesión
+    
+            // Crear sesión
             const session = {
                 sid: uuidv4(),
                 userId: user.id,
                 role: user.role_name
             };
-
+    
             await db.query(`
                 INSERT INTO sessions (session_id, user_id, expires_at)
                 VALUES ($1, $2, $3)
                 ON CONFLICT (session_id) DO NOTHING;
             `, [session.sid, session.userId, new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)]); // Expira en 30 días
-
+    
             const sessionEncoded = Buffer.from(JSON.stringify(session), 'ascii').toString('base64');
-
+    
             res.cookie('main_session', sessionEncoded, {
                 httpOnly: true,
                 secure: true,
                 sameSite: 'strict',
                 maxAge: 1000 * 60 * 60 * 24 * 30 // 30 días
             });
-
+    
             console.log(`Login successful for username: ${username}`);
-            await db.end();
+            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '200' });
             res.json({ message: 'Login successful' });
-        } catch (error) {
-            console.error('Login error:', error.message);
-            await db.end();
+        } catch (err) {
+            console.error('Login error:', err.message);
+            httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '500' });
             res.status(500).json({ error: 'Internal server error' });
+        } finally {
+            await db.end();
         }
     });
     
