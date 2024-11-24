@@ -8,7 +8,8 @@ module.exports = function (httpRequestsTotal, dbConfig) {
 
     router.post('/login', async (req, res) => {
         const { username, password } = req.body;
-        console.log(`Username and password: ${username} ${password}`);
+        const clientIp = req.ip; // Obtener la IP del cliente
+        console.log(`Username: ${username}, Client IP: ${clientIp}`);
 
         if (!username || !password) {
             httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '400' });
@@ -16,86 +17,48 @@ module.exports = function (httpRequestsTotal, dbConfig) {
         }
 
         const hashedPassword = createHash('sha256').update(password).digest('base64');
-        console.log(`Hashed password: ${hashedPassword}`);
-
         const db = new pg.Client(dbConfig);
         await db.connect();
 
         try {
-            // Verificar si la cuenta está bloqueada
-            const lockResult = await db.query(`
-                SELECT is_locked, unlock_time
-                FROM users
-                WHERE username = $1;
-            `, [username]);
+            const currentTime = new Date();
 
-            if (lockResult.rowCount > 0) {
-                const { is_locked, unlock_time } = lockResult.rows[0];
-                const currentTime = new Date();
+            // Verificar intentos fallidos por IP
+            const ipAttemptResult = await db.query(`
+                SELECT attempts, last_attempt
+                FROM ip_login_attempts
+                WHERE ip_address = $1;
+            `, [clientIp]);
 
-                // Si la cuenta está bloqueada y el tiempo de desbloqueo aún no ha pasado
-                if (is_locked && unlock_time && currentTime < new Date(unlock_time)) {
-                    const timeRemaining = Math.ceil((new Date(unlock_time) - currentTime) / 1000); // en segundos
+            if (ipAttemptResult.rowCount > 0) {
+                const { attempts, last_attempt } = ipAttemptResult.rows[0];
+                const lastAttemptTime = new Date(last_attempt);
+                const timeElapsed = currentTime - lastAttemptTime;
+                const lockoutPeriod = 15 * 60 * 1000; // 15 minutos en milisegundos
+
+                if (attempts >= 5 && timeElapsed < lockoutPeriod) {
+                    const timeRemaining = Math.ceil((lockoutPeriod - timeElapsed) / 1000); // en segundos
+                    console.log(`IP ${clientIp} is temporarily locked.`);
                     await db.end();
                     return res.status(429).json({
-                        error: 'Account temporarily locked due to multiple failed login attempts.',
+                        error: 'Too many login attempts from this IP. Try again later.',
                         timeRemaining: timeRemaining
                     });
                 }
 
-                // Si el tiempo de desbloqueo ha pasado, restablece el estado de bloqueo
-                if (is_locked && unlock_time && currentTime >= new Date(unlock_time)) {
-                    await db.query(`
-                        UPDATE users
-                        SET is_locked = FALSE, unlock_time = NULL
-                        WHERE username = $1;
-                    `, [username]);
-                }
-            }
-
-            // Verificar intentos de inicio de sesión fallidos
-            const attemptResult = await db.query(`
-                SELECT attempts, last_attempt
-                FROM login_attempts
-                WHERE username = $1;
-            `, [username]);
-
-            if (attemptResult.rowCount > 0) {
-                const { attempts, last_attempt } = attemptResult.rows[0];
-                const lastAttemptTime = new Date(last_attempt);
-                const currentTime = new Date();
-                const timeElapsed = currentTime - lastAttemptTime;
-                const lockoutPeriod = 15 * 60 * 1000; // 15 minutos en milisegundos
-
-                // Si hay tres o más intentos y es reciente, bloquea la cuenta temporalmente
-                if (attempts >= 3 && timeElapsed < lockoutPeriod) {
-                    const unlockTime = new Date(currentTime.getTime() + lockoutPeriod);
-                    await db.query(`
-                        UPDATE users
-                        SET is_locked = TRUE, unlock_time = $1
-                        WHERE username = $2;
-                    `, [unlockTime, username]);
-
-                    await db.end();
-                    return res.status(429).json({
-                        error: 'Account temporarily locked due to multiple failed login attempts.',
-                        timeRemaining: Math.ceil(lockoutPeriod / 1000)
-                    });
-                }
-
-                // Si han pasado más de 15 minutos, restablece los intentos
                 if (timeElapsed >= lockoutPeriod) {
+                    // Restablecer intentos fallidos por IP
                     await db.query(`
-                        UPDATE login_attempts
+                        UPDATE ip_login_attempts
                         SET attempts = 0, last_attempt = $1
-                        WHERE username = $2;
-                    `, [currentTime, username]);
+                        WHERE ip_address = $2;
+                    `, [currentTime, clientIp]);
                 }
             }
 
             // Intentar obtener el usuario desde la base de datos
             const result = await db.query(`
-                SELECT u.id, u.username, u.password, r.role_name
+                SELECT u.id, u.username, u.password, r.role_name, u.is_locked, u.unlock_time
                 FROM users u
                 JOIN user_roles ur ON u.id = ur.user_id
                 JOIN roles r ON ur.role_id = r.id
@@ -103,60 +66,84 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             `, [username]);
 
             if (result.rowCount === 0) {
-                // Registrar intento fallido para nombre de usuario inexistente
+                // Registrar intento fallido por IP
                 await db.query(`
-                    INSERT INTO login_attempts (username, attempts, last_attempt)
-                    VALUES ($1, 1, NOW())
-                    ON CONFLICT (username) DO UPDATE
-                    SET attempts = login_attempts.attempts + 1, last_attempt = NOW();
-                `, [username]);
+                    INSERT INTO ip_login_attempts (ip_address, attempts, last_attempt)
+                    VALUES ($1, 1, $2)
+                    ON CONFLICT (ip_address) DO UPDATE
+                    SET attempts = ip_login_attempts.attempts + 1, last_attempt = $2;
+                `, [clientIp, currentTime]);
+
+                console.log(`Login failed for non-existent username: ${username}`);
                 await db.end();
-                return res.status(401).json({ error: 'Invalid username' });
+                return res.status(401).json({ error: 'Invalid username or password' });
             }
 
             const user = result.rows[0];
 
-            // Si la contraseña no coincide, incrementar el contador de intentos fallidos
-            if (user.password !== hashedPassword) {
-                httpRequestsTotal.inc({ endpoint: 'login', method: 'POST', status_code: '401' });
-                res.status(401).json({ error: 'Invalid password' });
-                return;
+            // Verificar si la cuenta está bloqueada
+            if (user.is_locked && new Date() < new Date(user.unlock_time)) {
+                const timeRemaining = Math.ceil((new Date(user.unlock_time) - currentTime) / 1000); // en segundos
+                console.log(`Account for username ${username} is temporarily locked.`);
+                await db.end();
+                return res.status(429).json({
+                    error: 'Account temporarily locked due to multiple failed login attempts.',
+                    timeRemaining: timeRemaining
+                });
             }
 
-            // create session cookie and encode it in base64
-            console.log(`Create cookie session`);
+            if (user.password !== hashedPassword) {
+                // Registrar intento fallido por IP
+                await db.query(`
+                    INSERT INTO ip_login_attempts (ip_address, attempts, last_attempt)
+                    VALUES ($1, 1, $2)
+                    ON CONFLICT (ip_address) DO UPDATE
+                    SET attempts = ip_login_attempts.attempts + 1, last_attempt = $2;
+                `, [clientIp, currentTime]);
+
+                console.log(`Invalid password for username: ${username}`);
+                await db.end();
+                return res.status(401).json({ error: 'Invalid username or password' });
+            }
+
+            // Si la autenticación es exitosa, restablecer intentos fallidos por IP
+            await db.query(`
+                DELETE FROM ip_login_attempts
+                WHERE ip_address = $1;
+            `, [clientIp]);
+
+            // Crear y guardar la sesión
             const session = {
                 sid: uuidv4(),
                 userId: user.id,
                 role: user.role_name
             };
-            // Guardar la sesión en la base de datos
-            await db.query(
-                `
+
+            await db.query(`
                 INSERT INTO sessions (session_id, user_id, expires_at)
                 VALUES ($1, $2, $3)
                 ON CONFLICT (session_id) DO NOTHING;
-                `,
-                [session.sid, session.userId, new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)] // Expiración en 30 días
-            );
-            console.log(`New session: ${JSON.stringify(session)}`);
-            const sessionString = JSON.stringify(session);
-            const sessionEncoded = Buffer.from(sessionString, 'ascii').toString('base64');
-            console.log(`New session cookie: ${sessionEncoded}`);
+            `, [session.sid, session.userId, new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)]); // Expira en 30 días
+
+            const sessionEncoded = Buffer.from(JSON.stringify(session), 'ascii').toString('base64');
 
             res.cookie('main_session', sessionEncoded, {
-                httpOnly: false, // cookie is not accessible via JavaScript
-                secure: true, // https only
-                sameSite: 'strict', // cookie is not sent in cross-site requests
-                maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
+                httpOnly: true,
+                secure: true,
+                sameSite: 'strict',
+                maxAge: 1000 * 60 * 60 * 24 * 30 // 30 días
             });
 
+            console.log(`Login successful for username: ${username}`);
+            await db.end();
             res.json({ message: 'Login successful' });
-        } catch (err) {
-            console.error(err);
+        } catch (error) {
+            console.error('Login error:', error.message);
+            await db.end();
             res.status(500).json({ error: 'Internal server error' });
         }
     });
+    
     router.get('/logout', async (req, res) => {
         const encodedSessionData = req.cookies['main_session'];
 
