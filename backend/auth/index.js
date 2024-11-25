@@ -167,24 +167,24 @@ module.exports = function (httpRequestsTotal, dbConfig) {
 
         try {
             const sessionData = JSON.parse(Buffer.from(encodedSessionData, 'base64').toString('ascii'));
-            const { sessionId } = sessionData;
-
-            if (!sessionId) {
-                console.log('Invalid session ID');
-                return res.status(400).json({ error: 'Invalid session ID' });
+            const { sid: sessionId, userId } = sessionData;
+        
+            if (!sessionId || !userId) {
+                console.log('Invalid session ID or User ID');
+                return res.status(400).json({ error: 'Invalid session ID or User ID' });
             }
-
+        
             const db = new pg.Client(dbConfig);
             await db.connect();
             console.log('Connected to database for logout');
-
+        
             await db.query(`
                 DELETE FROM sessions WHERE session_id = $1;
             `, [sessionId]);
-
+        
             await db.end();
             console.log('Session deleted and disconnected from database');
-
+        
             // Limpiar la cookie de sesión
             res.clearCookie('main_session');
             httpRequestsTotal.inc({ endpoint: 'logout', method: 'GET', status_code: '200' });
@@ -193,8 +193,8 @@ module.exports = function (httpRequestsTotal, dbConfig) {
             console.error('Error processing logout:', err);
             res.status(500).json({ error: 'Internal server error' });
         }
+        
     });
-
 
     router.post('/register', async (req, res) => {
         const { username, password } = req.body;
