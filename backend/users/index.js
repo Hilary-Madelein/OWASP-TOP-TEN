@@ -80,7 +80,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
     });
 
     router.post('/:id', [
-        param('id').isInt().withMessage('El ID de usuario debe ser un número entero').toInt(),
+        param('id').isInt().withMessage('El ID debe ser un número entero').toInt(),
         body('username').trim().escape(),
         body('bio').trim().escape(),
         body('first_name').trim().escape(),
@@ -120,7 +120,7 @@ module.exports = function (httpRequestsTotal, dbConfig) {
     });
 
     router.get('/:id/payments', [
-        param('id').isInt().withMessage('El ID de usuario debe ser un número entero').toInt()
+        param('id').isInt().withMessage('El ID debe ser un número entero').toInt()
     ], async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
