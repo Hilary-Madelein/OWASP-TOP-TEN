@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "axios": "1.6.4",
+    "axios": "^1.7.7",
     "cookie-parser": "^1.4.6",
     "dd-trace": "^5.25.0",
     "express": "^4.21.1",
