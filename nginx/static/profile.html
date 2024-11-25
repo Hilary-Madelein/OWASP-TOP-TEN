@@ -229,7 +229,6 @@
         };
     
         const fetchUserData = async () => {
-            console.log('Fetching user data...');
             const session = document.cookie.split(';').find(c => c.includes('main_session'));
     
             if (!session) {
