@@ -1,0 +1,121 @@
+/* General Styling */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', Arial, sans-serif;
+    background-color: #f4f6f9;
+    line-height: 1.6;
+}
+
+/* Navbar */
+nav {
+    background-color: #202447;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 10px 15px;
+    margin-left: 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Page Title */
+h1 {
+    margin-top: 100px;
+    text-align: center;
+    color: #202447;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* Description */
+p {
+    text-align: center;
+    color: #555;
+    margin: 10px 0 30px;
+}
+
+/* Payments Container */
+#payments {
+    margin: 40px auto;
+    max-width: 1000px;
+    padding: 30px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Payment Card */
+.payment-card {
+    padding: 20px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ffffff, #f5f7fa);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.payment-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #e3e8f0, #ffffff);
+}
+
+/* Payment Card Details */
+.payment-card p {
+    margin: 0;
+    color: #555;
+    font-size: 16px;
+}
+
+.payment-card strong {
+    color: #202447;
+    font-weight: bold;
+}
+
+/* Highlight Amount */
+.payment-card .amount {
+    font-size: 20px;
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+/* Date Styling */
+.payment-card .date {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    #payments {
+        padding: 20px;
+        grid-template-columns: 1fr;
+    }
+}

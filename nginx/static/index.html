@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Platform</title>
+    <link rel="stylesheet" href="./css/index_style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">Learning Platform</div>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a id="profile" href="/profile">Profile</a></li>
+            <li><a id="logout" href="/logout">Logout</a></li>
+            <li><a id="login" href="/login">Login</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Welcome to Learning Platform</h1>
+        <p>Explore courses and start your journey to mastering new skills!</p>
+        <input type="text" placeholder="What do you want to learn?" />
+        <button>Search</button>
+    </section>
+
+    <!-- Courses Section -->
+    <section class="courses-section">
+        <h2>Our Courses</h2>
+        <div id="courses"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Learning Platform. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const coursesEl = document.getElementById('courses');
+        const loginEl = document.getElementById('login');
+        const profileEl = document.getElementById('profile');
+        const logoutEl = document.getElementById('logout');
+
+        if (document.cookie.includes('main_session')) {
+            loginEl.style.display = 'none';
+        } else {
+            profileEl.style.display = 'none';
+            logoutEl.style.display = 'none';
+        }
+
+        fetch('/api/courses', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            coursesEl.innerHTML = data.map(course => `
+                <div class="course-card">
+                    <h3>${course.course_name}</h3>
+                    <p>${course.course_description}</p>
+                    <a href="/course?courseId=${course.id}">View course</a>
+                </div>
+            `).join('');
+        });
+
+    </script>
+
+    //Utiliza el atributo integrity, lo que protege contra ataques como la inyección de código malicioso
+    //El atributo crossorigin="anonymous" asegura que no se envían credenciales con la solicitud al servidor externo
+    <script type="text/javascript" src="https://localbox/cdn/library.js" integrity="sha384-hcPGjDoygtQhBZoYYMYseVG7iJUjmBZjmRkdEAmt9qvyOqTmTe3bnokcWwr9wtyx" crossorigin="anonymous"></script>
+
+</body>
+
+</html>

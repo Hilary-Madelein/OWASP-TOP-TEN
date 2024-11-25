@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logout</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <script>
+        fetch('/api/logout')
+            .then(async (response) => {
+                if (response.ok) {
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Vuelve pronto!',
+                        text: 'Has cerrado sesión exitosamente. Serás redirigido al inicio en unos segundos.',
+                        timer: 2000, 
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            const timerInterval = setInterval(() => {
+                                const b = Swal.getHtmlContainer().querySelector('b');
+                                if (b) {
+                                    b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
+                                }
+                            }, 100);
+                        },
+                        willClose: () => {
+                            window.location = '/';
+                        }
+                    });
+                } else {
+                    console.error('Logout failed');
+
+                    const errorResponse = await response.json();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: errorResponse.error || 'No se pudo cerrar sesión. Por favor, inténtalo de nuevo.',
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Hubo un problema al procesar tu solicitud. Por favor, inténtalo más tarde.',
+                });
+            });
+    </script>
+</body>
+
+</html>

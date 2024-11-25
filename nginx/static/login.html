@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="./css/login_style.css">
+    <!-- SweetAlert2 Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sección izquierda -->
+        <div class="left">
+            <div class="curve"></div>
+            <div class="logo">
+                <img src="https://images.vexels.com/content/204682/preview/cat-sitting-silhouette-cat-5ce05f.png"
+                    alt="Logo">
+            </div>
+            <h1>Welcome Back!</h1>
+            <p>A learning platform</p>
+        </div>
+
+        <!-- Right Section -->
+        <div class="right">
+            <h2>Welcome</h2>
+            <p>Log in to your account to continue</p>
+            <form id="loginForm">
+                <input type="text" id="username" placeholder="Usuario" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Log In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SweetAlert2 Script -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        const loginEl = document.getElementById('loginForm');
+        const loginButton = document.getElementById('loginButton');
+        let lockoutTimeout = null;
+
+        // Función para bloquear el botón con un temporizador
+        const startLockoutTimer = (timeRemaining) => {
+            loginButton.disabled = true; // Desactivar el botón
+            loginButton.style.cursor = "not-allowed"; // Cambiar el estilo del cursor
+
+            let remainingTime = timeRemaining;
+
+            const interval = setInterval(() => {
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+
+                // Mostrar mensaje con SweetAlert2
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Too Many Attempts',
+                    html: `Please try again in <b>${minutes} minutes and ${seconds} seconds</b>.`,
+                    showConfirmButton: false,
+                    timer: 1000,
+                    didClose: () => {
+                        if (remainingTime <= 0) {
+                            clearInterval(interval);
+                            loginButton.disabled = false; // Reactivar el botón
+                            loginButton.style.cursor = "pointer";
+                        }
+                    },
+                });
+
+                remainingTime -= 1;
+
+                if (remainingTime <= 0) {
+                    clearInterval(interval);
+                    loginButton.disabled = false; // Reactivar el botón
+                    loginButton.style.cursor = "pointer";
+                }
+            }, 1000);
+        };
+
+        // Evento para manejar el envío del formulario
+        loginEl.addEventListener('submit', (e) => {
+            e.preventDefault(); // Evitar recarga de la página
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Please fill in all required fields!',
+                });
+                return;
+            }
+
+            fetch('/api/login', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+                .then(async (response) => {
+                    let data;
+                    try {
+                        data = await response.json(); 
+                    } catch (e) {
+                        console.error('Error parsing response JSON:', e);
+                        data = {}; 
+                    }
+
+                    if (response.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Login Successful!',
+                            text: 'Redirecting to your profile...',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        }).then(() => {
+                            window.location = '/profile'; // Redirige al perfil
+                        });
+                    } else if (response.status === 429 && data.timeRemaining) {
+                        // Bloqueo por demasiados intentos
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Account Locked',
+                            html: `Too many login attempts. Please try again in <b>${Math.floor(data.timeRemaining / 60)} minutes and ${data.timeRemaining % 60} seconds</b>.`,
+                        });
+                    } else if (response.status === 401) {
+                        if (data.error === 'Invalid username') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid Username',
+                                text: 'The username you entered does not exist.',
+                            });
+                        } else if (data.error === 'Invalid password') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid Password',
+                                text: 'The password you entered is incorrect.',
+                            });
+                        }
+                    } else {
+                        // Mensaje genérico para otros errores
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Login Failed',
+                            text: data.error || 'An unknown error occurred. Please try again.',
+                        });
+                    }
+                })
+                .catch((error) => {
+                    // Manejo de errores de red u otros problemas inesperados
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Network Error',
+                        text: `An error occurred: ${error.message}`,
+                    });
+                });
+
+
+
+        });
+    </script>
+</body>
+
+</html>

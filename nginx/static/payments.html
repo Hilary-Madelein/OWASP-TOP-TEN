@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Payments</title>
+    <link rel="stylesheet" href="./css/payments_style.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a id="profile" href="/profile">Profile</a>
+        <a id="logout" href="/logout">Logout</a>
+    </nav>
+
+    <!-- Page Title -->
+    <h1>Payments</h1>
+    <p>Here you can view your payments.</p>
+
+    <!-- Payments Container -->
+    <div id="payments">
+        <div class="loading">Loading payments...</div>
+    </div>
+
+    <script>
+        const paymentsEl = document.getElementById('payments');
+
+        // Helper function to format dates
+        const formatDate = (date) => {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+
+        // Get userId from the session cookie
+        const getUserIdFromCookie = () => {
+            const cookie = document.cookie.split('; ').find(row => row.startsWith('main_session='));
+            if (!cookie) return null;
+
+            const sessionData = JSON.parse(atob(decodeURIComponent(cookie.split('=')[1])));
+            return sessionData.userId;
+        };
+
+        // Fetch payments data for the logged-in user
+        const fetchPayments = async () => {
+            const userId = getUserIdFromCookie();
+            if (!userId) {
+                paymentsEl.innerHTML = '<p class="error">Error: User not logged in.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${userId}/payments`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch payments: ${response.statusText}`);
+                }
+
+                const payments = await response.json();
+                if (payments.length === 0) {
+                    paymentsEl.innerHTML = '<p class="no-payments">No payments found.</p>';
+                    return;
+                }
+
+                paymentsEl.innerHTML = payments.map(payment => `
+            <div class="payment-card">
+                <p><strong>ID:</strong> ${payment.id}</p>
+                <p class="date"><strong>Date:</strong> ${formatDate(payment.date)}</p>
+                <p class="amount"><strong>Amount:</strong> $${Number(payment.amount).toFixed(2)}</p>
+            </div>
+        `).join('');
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+                paymentsEl.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        };
+
+        // Fetch payments on page load
+        fetchPayments();
+
+    </script>
+</body>
+
+</html>

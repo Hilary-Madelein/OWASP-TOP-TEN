@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="./css/user_style.css">
+</head>
+
+<body>
+    <div id="user" class="profile-container">
+        <p class="loading-message">Loading user data...</p>
+    </div>
+
+    <script>
+        const userContainer = document.getElementById('user');
+
+        // Read userId from URL
+        const url = new URL(window.location.href);
+        const userId = url.searchParams.get('userId');
+
+        // Get user data from the server
+        fetch(`/api/users/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                userContainer.innerHTML = `
+                    <img src="/files/${data.username}.jpg" alt="Profile picture" />
+                    <h3>${data.first_name} ${data.last_name}</h3>
+                    <p><strong>About me:</strong> ${data.bio}</p>
+                    <p><strong>Email:</strong> ${data.email}</p>
+                    <p><strong>Phone:</strong> ${data.phone}</p>
+                    <p>Follow me on <a href="${data.website}" target="_blank" rel="noopener noreferrer">${data.website}</a></p>
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching user data:', error);
+                userContainer.innerHTML = `<p class="error-message">User not found</p>`;
+            });
+    </script>
+</body>
+
+</html>

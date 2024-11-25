@@ -1,0 +1,224 @@
+/* General Styling */
+body {
+    margin: 0;
+    font-family: 'Poppins', Arial, sans-serif;
+    background-color: #eef2f6;
+    color: #202447;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Navbar Styling */
+nav {
+    background: #202447;
+    padding: 15px 20px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    flex-wrap: wrap;
+}
+
+nav .logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+nav .nav-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 15px;
+}
+
+nav .nav-links a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s, transform 0.3s;
+}
+
+nav .nav-links a:hover {
+    background-color: #5e7aa8;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* Main Container */
+.container {
+    margin-top: 120px;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 40px;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+
+/* Profile Picture Section */
+.profile-picture-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centra verticalmente */
+    align-items: center; /* Centra horizontalmente */
+    gap: 20px;
+    background: #202447;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    color: white;
+    height: 100%; 
+    max-height: 100%; 
+    overflow: hidden; 
+    box-sizing: border-box; 
+    width: 100%;
+}
+
+.profile-picture-container img {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 5px solid #fff;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.profile-picture-container h3 {
+    font-size: 24px;
+    margin: 0; 
+    font-weight: bold;
+    color: #ffffff;
+}
+
+
+.profile-picture-container img:hover {
+    transform: scale(1.15);
+    box-shadow: 0px 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-picture-container p {
+    font-size: 16px;
+    color: #dbeafe;
+}
+
+/* Form Section */
+.form-container {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
+    display: grid;
+    gap: 20px;
+}
+
+.form-container .form-group {
+    display: grid;
+    grid-template-columns: 140px auto;
+    align-items: center;
+    gap: 15px;
+}
+
+.form-container label {
+    font-weight: bold;
+    color: #202447;
+    text-align: right;
+}
+
+.form-container input,
+.form-container textarea {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #f9f9f9;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-container input:focus,
+.form-container textarea:focus {
+    outline: none;
+    border-color: #00bfff;
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.4);
+}
+
+.form-container textarea {
+    resize: none;
+}
+
+/* Buttons */
+.buttons-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 30px;
+    background-color: #202447;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+    background-color: #00bfff;
+    transform: translateY(-3px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    nav {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 20px;
+    }
+
+    nav .logo {
+        margin-bottom: 10px;
+    }
+
+    .container {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .profile-picture-container {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .form-container .form-group {
+        grid-template-columns: 1fr;
+    }
+}
