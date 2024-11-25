@@ -92,53 +92,79 @@
         const saveButton = document.getElementById('save-button');
         const cancelButton = document.getElementById('cancel-button');
         const profileFields = document.querySelectorAll('#profile input, #profile textarea');
-
+    
         let originalData = {};
-
+    
         const sanitizeInput = (input) => {
             const element = document.createElement('div');
             element.innerText = input;
             return element.innerHTML;
         };
-
-        const enableEditing = () => {
-            originalData = {}; // Guarda los datos originales
-            profileFields.forEach((field) => {
-                originalData[field.name] = field.value; // Almacena el valor original
-                field.readOnly = false; // Habilita los campos
-                field.classList.add('editable'); // Agrega estilo de edición
-            });
-            editButton.style.display = 'none'; // Oculta el botón "Editar"
-            saveButton.style.display = 'inline-block'; // Muestra el botón "Guardar"
-            cancelButton.style.display = 'inline-block'; // Muestra el botón "Cancelar"
+    
+        const adminLink = document.getElementById('admin');
+    
+        const checkSession = () => {
+            const session = document.cookie.split(';').find(c => c.includes('main_session'));
+            if (!session) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sesión Expirada',
+                    text: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+                }).then(() => {
+                    window.location.href = '/login';
+                });
+                return null;
+            }
+            return JSON.parse(atob(decodeURIComponent(session.split('=')[1])));
         };
-
+    
+        const sessionData = checkSession();
+        if (sessionData) {
+            const { role } = sessionData;
+            if (role !== 'admin') {
+                adminLink.style.display = 'none';
+            }
+        }
+    
+        const enableEditing = () => {
+            originalData = {}; 
+            profileFields.forEach((field) => {
+                originalData[field.name] = field.value;
+                field.readOnly = false;
+                field.classList.add('editable');
+            });
+            editButton.style.display = 'none'; 
+            saveButton.style.display = 'inline-block'; 
+            cancelButton.style.display = 'inline-block'; 
+        };
+    
         const cancelEditing = () => {
             profileFields.forEach((field) => {
-                field.value = originalData[field.name]; // Restaura los valores originales
-                field.readOnly = true; // Deshabilita los campos
-                field.classList.remove('editable'); // Elimina estilo de edición
+                field.value = originalData[field.name];
+                field.readOnly = true;
+                field.classList.remove('editable');
             });
-            editButton.style.display = 'inline-block'; // Muestra el botón "Editar"
-            saveButton.style.display = 'none'; // Oculta el botón "Guardar"
-            cancelButton.style.display = 'none'; // Oculta el botón "Cancelar"
+            editButton.style.display = 'inline-block'; 
+            saveButton.style.display = 'none'; 
+            cancelButton.style.display = 'none'; 
         };
-
+    
         const saveChanges = async (e) => {
             e.preventDefault();
-
+    
             const formData = new FormData(profile);
             const updatedData = {};
-
+    
             for (const [key, value] of formData.entries()) {
                 updatedData[key] = sanitizeInput(value.trim());
             }
-
+    
             try {
-                const session = document.cookie.split(';').find(c => c.includes('main_session'));
-                const sessionData = atob(decodeURIComponent(session.split('=')[1]));
-                const { userId } = JSON.parse(sessionData);
-
+                const session = checkSession();
+                if (!session) return;
+    
+                const { userId } = session;
+    
                 const response = await fetch(`/api/users/${userId}`, {
                     method: 'POST',
                     headers: {
@@ -146,7 +172,7 @@
                     },
                     body: JSON.stringify(updatedData),
                 });
-
+    
                 if (response.ok) {
                     Swal.fire({
                         icon: 'success',
@@ -154,36 +180,23 @@
                         text: 'Perfil actualizado correctamente.',
                     });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error al actualizar el perfil.',
-                    });
+                    const errorData = await response.json();
+                    handleError(response.status, errorData);
                 }
             } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: `Error: ${error.message}`,
-                });
+                handleError(500, { message: error.message });
             }
-
-            cancelEditing(); // Desactiva los campos después de guardar
+    
+            cancelEditing(); 
         };
-
-
-
+    
         const fetchUserData = async () => {
             try {
-                const session = document.cookie.split(';').find(c => c.includes('main_session'));
-                if (!session) {
-                    window.location.href = '/';
-                    return;
-                }
-
-                const sessionData = atob(decodeURIComponent(session.split('=')[1]));
-                const { userId } = JSON.parse(sessionData);
-
+                const session = checkSession();
+                if (!session) return;
+    
+                const { userId } = session;
+    
                 const response = await fetch(`/api/users/${userId}`);
                 if (response.ok) {
                     const data = await response.json();
@@ -192,26 +205,69 @@
                         field.value = sanitizeInput(data[field.name]) || '';
                     });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error al cargar los datos del usuario.',
-                    });
+                    const errorData = await response.json();
+                    handleError(response.status, errorData);
                 }
             } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: `Error: ${error.message}`,
-                });
+                handleError(500, { message: error.message });
             }
         };
-
+    
+        const handleError = (status, errorData) => {
+            switch (status) {
+                case 400:
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Solicitud Inválida',
+                        text: errorData.message || 'Por favor revisa los datos ingresados.',
+                    });
+                    break;
+                case 401:
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No Autorizado',
+                        text: 'No tienes permiso para realizar esta acción.',
+                    }).then(() => {
+                        window.location.href = '/login';
+                    });
+                    break;
+                case 403:
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Acceso Denegado',
+                        text: 'No tienes acceso a este recurso.',
+                    });
+                    break;
+                case 404:
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No Encontrado',
+                        text: errorData.message || 'El recurso solicitado no existe.',
+                    });
+                    break;
+                case 500:
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error del Servidor',
+                        text: errorData.message || 'Ocurrió un error inesperado. Por favor intenta nuevamente.',
+                    });
+                    break;
+                default:
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error Desconocido',
+                        text: 'Algo salió mal. Por favor intenta nuevamente.',
+                    });
+                    break;
+            }
+        };
+    
         editButton.addEventListener('click', enableEditing);
         cancelButton.addEventListener('click', cancelEditing);
         profile.addEventListener('submit', saveChanges);
         fetchUserData();
     </script>
+    
 </body>
 
 </html>

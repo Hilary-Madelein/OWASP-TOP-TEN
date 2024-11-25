@@ -1,91 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Payments</title>
-    <style>
-        /* General Styling */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            line-height: 1.6;
-        }
-
-        nav {
-            background-color: #202447;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 1000;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-size: 16px;
-            padding: 10px 15px;
-            margin-left: 20px;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-
-        nav a:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        h1 {
-            margin-top: 100px;
-            text-align: center;
-            color: #202447;
-        }
-
-        p {
-            text-align: center;
-            color: #555;
-        }
-
-        #payments {
-            margin: 40px auto;
-            max-width: 800px;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-card {
-            margin-bottom: 24px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 16px;
-            background-color: #f9f9f9;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .payment-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .payment-card p {
-            margin: 5px 0;
-        }
-
-        .payment-card strong {
-            color: #202447;
-        }
-    </style>
+    <link rel="stylesheet" href="./css/payments_style.css">
 </head>
+
 <body>
     <!-- Navbar -->
     <nav>
@@ -100,7 +22,9 @@
     <p>Here you can view your payments.</p>
 
     <!-- Payments Container -->
-    <div id="payments"></div>
+    <div id="payments">
+        <div class="loading">Loading payments...</div>
+    </div>
 
     <script>
         const paymentsEl = document.getElementById('payments');
@@ -124,7 +48,7 @@
         const fetchPayments = async () => {
             const userId = getUserIdFromCookie();
             if (!userId) {
-                paymentsEl.innerText = 'Error: User not logged in.';
+                paymentsEl.innerHTML = '<p class="error">Error: User not logged in.</p>';
                 return;
             }
 
@@ -141,21 +65,28 @@
                 }
 
                 const payments = await response.json();
+                if (payments.length === 0) {
+                    paymentsEl.innerHTML = '<p class="no-payments">No payments found.</p>';
+                    return;
+                }
+
                 paymentsEl.innerHTML = payments.map(payment => `
-                    <div class="payment-card">
-                        <p><strong>ID:</strong> ${payment.id}</p>
-                        <p><strong>Date:</strong> ${formatDate(payment.date)}</p>
-                        <p><strong>Amount:</strong> $${payment.amount}</p>
-                    </div>
-                `).join('');
+            <div class="payment-card">
+                <p><strong>ID:</strong> ${payment.id}</p>
+                <p class="date"><strong>Date:</strong> ${formatDate(payment.date)}</p>
+                <p class="amount"><strong>Amount:</strong> $${Number(payment.amount).toFixed(2)}</p>
+            </div>
+        `).join('');
             } catch (error) {
                 console.error('Error fetching payments:', error);
-                paymentsEl.innerText = `Error: ${error.message}`;
+                paymentsEl.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             }
         };
 
         // Fetch payments on page load
         fetchPayments();
+
     </script>
 </body>
+
 </html>

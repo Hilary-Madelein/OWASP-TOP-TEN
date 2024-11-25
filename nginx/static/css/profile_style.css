@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: 'Poppins', Arial, sans-serif;
-    background-color: #f4f6f9;
+    background-color: #eef2f6;
     color: #202447;
     line-height: 1.6;
     overflow-x: hidden;
@@ -10,8 +10,8 @@ body {
 
 /* Navbar Styling */
 nav {
-    background-color: #202447;
-    padding: 10px 20px;
+    background: #202447;
+    padding: 15px 20px;
     position: fixed;
     top: 0;
     width: 100%;
@@ -19,130 +19,142 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     flex-wrap: wrap;
 }
 
 nav .logo {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: bold;
-    color: white;
+    color: #ffffff;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
 }
 
 nav .nav-links {
     display: flex;
-    flex-wrap: wrap;
     list-style: none;
     margin: 0;
     padding: 0;
-    gap: 10px;
-}
-
-nav .nav-links li {
-    margin: 0;
+    gap: 15px;
 }
 
 nav .nav-links a {
     color: white;
     text-decoration: none;
     font-size: 16px;
-    padding: 8px 12px;
-    transition: background-color 0.3s, color 0.3s;
+    padding: 10px 20px;
     border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s, transform 0.3s;
 }
 
-.nav-links a:hover {
+nav .nav-links a:hover {
     background-color: #5e7aa8;
+    color: #fff;
+    transform: scale(1.1);
 }
 
 /* Main Container */
 .container {
-    margin-top: 100px;
-    padding: 30px;
+    margin-top: 120px;
+    padding: 40px;
     background: #ffffff;
     border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    max-width: 900px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    max-width: 1000px;
     margin-left: auto;
     margin-right: auto;
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 30px;
-    align-items: flex-start;
+    gap: 40px;
+    animation: fadeIn 0.8s ease-in-out;
 }
+
 
 /* Profile Picture Section */
 .profile-picture-container {
     text-align: center;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 15px;
+    justify-content: center; /* Centra verticalmente */
+    align-items: center; /* Centra horizontalmente */
+    gap: 20px;
+    background: #202447;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    color: white;
+    height: 100%; 
+    max-height: 100%; 
+    overflow: hidden; 
+    box-sizing: border-box; 
+    width: 100%;
 }
 
 .profile-picture-container img {
-    width: 150px;
-    height: 150px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
-    border: 4px solid #202447;
-    transition: transform 0.3s;
-}
-
-.profile-picture-container img:hover {
-    transform: scale(1.05);
+    border: 5px solid #fff;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .profile-picture-container h3 {
-    margin: 10px 0 5px;
-    font-size: 20px;
-    color: #202447;
-    text-transform: capitalize;
+    font-size: 24px;
+    margin: 0; 
+    font-weight: bold;
+    color: #ffffff;
+}
+
+
+.profile-picture-container img:hover {
+    transform: scale(1.15);
+    box-shadow: 0px 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-picture-container p {
+    font-size: 16px;
+    color: #dbeafe;
 }
 
 /* Form Section */
 .form-container {
-    background: #f9f9f9;
-    padding: 25px;
+    background: #ffffff;
+    padding: 30px;
     border-radius: 15px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
     display: grid;
     gap: 20px;
 }
 
 .form-container .form-group {
     display: grid;
-    grid-template-columns: 120px auto;
+    grid-template-columns: 140px auto;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
 }
 
 .form-container label {
-    font-weight: 600;
+    font-weight: bold;
     color: #202447;
     text-align: right;
 }
 
 .form-container input,
 .form-container textarea {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 14px;
-    width: 100%;
-    background: #ffffff;
-    transition: all 0.3s;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #f9f9f9;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .form-container input:focus,
 .form-container textarea:focus {
     outline: none;
     border-color: #00bfff;
-    box-shadow: 0 0 6px rgba(0, 191, 255, 0.5);
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.4);
 }
 
 .form-container textarea {
@@ -156,40 +168,21 @@ nav .nav-links a {
 }
 
 button {
-    padding: 10px 20px;
+    padding: 12px 25px;
     border: none;
-    border-radius: 5px;
+    border-radius: 30px;
     background-color: #202447;
     color: white;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
+    font-weight: bold;
     transition: background-color 0.3s, transform 0.2s;
 }
 
 button:hover {
     background-color: #00bfff;
-    transform: scale(1.05);
+    transform: translateY(-3px);
 }
-
-.error-message {
-    color: red;
-    margin-top: 10px;
-    text-align: center;
-}
-
-.success-message {
-    color: green;
-    margin-top: 10px;
-    text-align: center;
-}
-
-
-.editable {
-    border: 2px solid #ffd700;
-    background-color: #fffbe6;
-    transition: all 0.3s ease;
-}
-
 
 /* Animations */
 @keyframes fadeIn {
@@ -208,27 +201,24 @@ button:hover {
     nav {
         flex-direction: column;
         align-items: flex-start;
+        padding: 20px;
     }
 
     nav .logo {
         margin-bottom: 10px;
     }
 
-    nav .nav-links {
-        justify-content: flex-start;
-    }
-
     .container {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 30px;
+    }
+
+    .profile-picture-container {
+        text-align: center;
+        padding: 20px;
     }
 
     .form-container .form-group {
         grid-template-columns: 1fr;
-        text-align: left;
-    }
-
-    .profile-picture-container {
-        align-items: center;
     }
 }

@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User</title>
+    <title>User Profile</title>
+    <link rel="stylesheet" href="./css/user_style.css">
 </head>
+
 <body>
-    <div id="user"></div>
+    <div id="user" class="profile-container">
+        <p class="loading-message">Loading user data...</p>
+    </div>
+
     <script>
-        const user = document.getElementById('user');
+        const userContainer = document.getElementById('user');
 
         // Read userId from URL
         const url = new URL(window.location.href);
@@ -18,20 +24,20 @@
         fetch(`/api/users/${userId}`)
             .then(response => response.json())
             .then(data => {
-                user.innerHTML = `
-                    <img style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover;" src="/files/${data.username}.jpg" alt="Profile picture" />
+                userContainer.innerHTML = `
+                    <img src="/files/${data.username}.jpg" alt="Profile picture" />
                     <h3>${data.first_name} ${data.last_name}</h3>
-                    <p>About me</p>
-                    <p>${data.bio}</p>
+                    <p><strong>About me:</strong> ${data.bio}</p>
                     <p><strong>Email:</strong> ${data.email}</p>
                     <p><strong>Phone:</strong> ${data.phone}</p>
                     <p>Follow me on <a href="${data.website}" target="_blank" rel="noopener noreferrer">${data.website}</a></p>
                 `;
             })
             .catch(error => {
-                // Unknown user
-                user.innerHTML = `<p style="color: red;">User not found</p>`;
+                console.error('Error fetching user data:', error);
+                userContainer.innerHTML = `<p class="error-message">User not found</p>`;
             });
     </script>
 </body>
+
 </html>

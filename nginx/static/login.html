@@ -23,7 +23,7 @@
             <p>A learning platform</p>
         </div>
 
-        <!-- Sección derecha -->
+        <!-- Right Section -->
         <div class="right">
             <h2>Welcome</h2>
             <p>Log in to your account to continue</p>
@@ -107,11 +107,10 @@
                 .then(async (response) => {
                     let data;
                     try {
-                        data = await response.json(); // Intentar parsear la respuesta como JSON
-                        console.log(data);
+                        data = await response.json(); 
                     } catch (e) {
                         console.error('Error parsing response JSON:', e);
-                        data = {}; // Si falla, asegurarse de que `data` no sea null
+                        data = {}; 
                     }
 
                     if (response.ok) {
